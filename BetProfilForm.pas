@@ -24,7 +24,8 @@ type
     Label1: TLabel;
     Edit4: TEdit;
     procedure loadProfiles;
-    function calculateRollByMultiply(condition: String; multiply: Integer): double;
+    procedure clearData();
+    function calculateRollByMultiply(condition: String; multiply: Integer): String;
     procedure Button1Click(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -66,10 +67,11 @@ begin
     try
         edit1.Text := combobox2.Items[combobox2.ItemIndex].Remove(combobox2.Items[combobox2.ItemIndex].IndexOf('.', 4));
         edit2.Text := inttostr(iniFile.ReadInteger('Betprofil', 'Profit', 0));
+        edit11.Text := inttostr(iniFile.ReadInteger('Betprofil', 'Multiply', 0));
+        combobox1.Text := iniFile.ReadString('Betprofil', 'Condition', '>');
         edit3.Text := iniFile.ReadString('Betprofil', 'Target', '');
         edit4.Text := inttostr(iniFile.ReadInteger('Betprofil', 'ZeroBets', 0));
-        combobox1.Text := iniFile.ReadString('Betprofil', 'Condition', '>');
-        edit11.Text := inttostr(iniFile.ReadInteger('Betprofil', 'Multiply', 0));
+
         checkbox1.checked := iniFile.ReadBool('BetProfil', 'Inverse', false);
     finally
         iniFile.Free;
@@ -84,24 +86,25 @@ begin
     begin
          multiply := strtoint(edit11.Text);
          condition := combobox1.Items[combobox1.ItemIndex];
-         edit3.Text := floattostr(calculateRollByMultiply(condition, multiply));
+         edit3.Text := calculateRollByMultiply(condition, multiply);
     end;
 end;
 
-function TForm3.calculateRollByMultiply(condition: String; multiply: Integer): double;
+function TForm3.calculateRollByMultiply(condition: String; multiply: Integer): String;
 begin
     if (condition = '>') then
     begin
-         result := Math.RoundTo((100 - (99 / multiply) - 0.01), -2);
+         result := floatToStr(Math.RoundTo((100 - (99 / multiply) - 0.01), -2)).replace(',', '.');
     end else
         begin
-             result := Math.RoundTo(99 / multiply, -2);
+             result := floatToStr(Math.RoundTo(99 / multiply, -2)).replace(',', '.');
         end;
 end;
 
 procedure TForm3.FormShow(Sender: TObject);
 begin
     loadProfiles();
+    clearData();
 end;
 
 procedure TForm3.loadProfiles();
@@ -112,6 +115,17 @@ begin
     Combobox2.Clear;
     for path in TDirectory.GetFiles('./bets/') do
         Combobox2.Items.Add(path.Remove(0, 7));
+end;
+
+procedure TForm3.clearData();
+begin
+    edit1.Text := '';
+    edit2.Text := '';
+    edit3.Text := '';
+    edit4.Text := '0';
+    edit11.Text := '';
+    combobox1.Text := '>';
+    checkbox1.Checked := false;
 end;
 
 end.

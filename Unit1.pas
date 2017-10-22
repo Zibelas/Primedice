@@ -56,6 +56,9 @@ type
     RESTRequest2: TRESTRequest;
     RESTClient2: TRESTClient;
     RESTResponse2: TRESTResponse;
+    MemoContent: TMemo;
+    LinkControlToFieldContent: TLinkControlToField;
+    BindingsList1: TBindingsList;
     procedure Button1Click(Sender: TObject);
     procedure betBySetProfit(amount: double; target, condition: string);
     procedure reset();
@@ -387,7 +390,7 @@ begin
             if (currentBetProfil.inverse) then
             begin
                 currentBetProfil.condition := ifthen(currentBetProfil.condition = '>', '<', '>');
-                currentBetProfil.target := floattostr(Form3.calculateRollByMultiply(currentBetProfil.condition, currentBetProfil.multiply));
+                currentBetProfil.target := Form3.calculateRollByMultiply(currentBetProfil.condition, currentBetProfil.multiply);
             end;
             currentBet := getNextBet(currentBetIndex);
             if (checkbox3.Checked) then
@@ -450,7 +453,7 @@ end;
 function TForm1.parseForDisplayBet(currentBetIndex: Integer): string;
 var display, amountBets, displayPayment, displayProfit: string;
 begin
-    display := inttostr(currentRound + 1);
+    display := inttostr(currentRound);
     while (display.Length) < 5 do display := '0' + display;
     amountBets := inttostr(currentBetIndex + 1);
     while (amountBets.Length) < 5 do amountBets := '0' + amountBets;
@@ -470,6 +473,7 @@ begin
     userJSON := jObject.Values['user'] as TJSONObject;
     id := betJSON.Values['id'].Value;
     roll := betJSON.Values['roll'].Value;
+    writeLog(roll + ':' + nonce + ':' + id, 'pastRolls.txt');
     nonce := betJSON.Values['nonce'].Value;
     if (roll.Equals('77.77')) then
     begin
