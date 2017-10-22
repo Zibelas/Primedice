@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Inifiles, IOUtils;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Inifiles, IOUtils, Math;
 
 type
   TForm3 = class(TForm)
@@ -24,6 +24,7 @@ type
     Label1: TLabel;
     Edit4: TEdit;
     procedure loadProfiles;
+    function calculateRollByMultiply(condition: String; multiply: Integer): double;
     procedure Button1Click(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -77,18 +78,25 @@ end;
 
 procedure TForm3.Edit11Change(Sender: TObject);
 var multiply: Integer;
+    condition: String;
 begin
     if (edit11.Text <> '') and (edit11.Text <> '0') then
     begin
-         multiply := strtoint(edit11.Text) * 1000 div 1000;
-         if (combobox1.Items[combobox1.ItemIndex] = '>') then
-         begin
-              edit3.Text := floattostr(100 - (99 / multiply) - 0.01);
-         end else
-             begin
-                  edit3.Text := floattostr(99 / multiply);
-             end;
+         multiply := strtoint(edit11.Text);
+         condition := combobox1.Items[combobox1.ItemIndex];
+         edit3.Text := floattostr(calculateRollByMultiply(condition, multiply));
     end;
+end;
+
+function TForm3.calculateRollByMultiply(condition: String; multiply: Integer): double;
+begin
+    if (condition = '>') then
+    begin
+         result := Math.RoundTo((100 - (99 / multiply) - 0.01), -2);
+    end else
+        begin
+             result := Math.RoundTo(99 / multiply, -2);
+        end;
 end;
 
 procedure TForm3.FormShow(Sender: TObject);

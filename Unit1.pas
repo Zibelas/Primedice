@@ -7,7 +7,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, IPPeerClient, REST.Client, System.JSON,
   Data.Bind.Components, Data.Bind.ObjectScope, Vcl.StdCtrls, System.Rtti,
   System.Bindings.Outputs, Vcl.Bind.Editors, Data.Bind.EngExt, Vcl.Bind.DBEngExt,
-  Vcl.ExtCtrls, System.Math, REST.HttpClient, Inifiles, Vcl.Menus, IOUtils;
+  Vcl.ExtCtrls, System.Math, REST.HttpClient, Inifiles, Vcl.Menus, IOUtils, StrUtils;
 
 type
   TForm1 = class(TForm)
@@ -384,15 +384,20 @@ begin
             profitPerSesson := profitPerSesson + computedProfitList[currentBetIndex];
             profitAvailableForTip := profitAvailableForTip + round(computedProfitList[currentBetIndex]);
             reset();
+            if (currentBetProfil.inverse) then
+            begin
+                currentBetProfil.condition := ifthen(currentBetProfil.condition = '>', '<', '>');
+                currentBetProfil.target := floattostr(Form3.calculateRollByMultiply(currentBetProfil.condition, currentBetProfil.multiply));
+            end;
             currentBet := getNextBet(currentBetIndex);
             if (checkbox3.Checked) then
             begin
-               if (profitAvailableForTip * 100 div currentTipProfil.percent) >= currentTipProfil.minAmount then
-               begin
-                   tip(profitAvailableForTip * 100 div currentTipProfil.percent);
-                   tipPerSesson := tipPerSesson + (profitAvailableForTip div currentTipProfil.percent);
-                   profitAvailableForTip := 0;
-               end;
+                if (profitAvailableForTip * 100 div currentTipProfil.percent) >= currentTipProfil.minAmount then
+                begin
+                    tip(profitAvailableForTip * 100 div currentTipProfil.percent);
+                    tipPerSesson := tipPerSesson + (profitAvailableForTip div currentTipProfil.percent);
+                    profitAvailableForTip := 0;
+                end;
             end;
             if (simulation.Checked) then
             begin
@@ -410,22 +415,23 @@ begin
                 button1.Enabled := true;
                 endafterround.Checked := false;
             end;
-        end else begin
-                     inc(currentBetIndex);
-                     if (currentBetIndex > longestLoosingStreak) then
-                     begin
-                        longestLoosingStreak := currentBetIndex;
-                     end;
-                     currentBet := getNextBet(currentBetIndex);
-                     if (simulation.Checked) then
-                     begin
-                        currentBet := 0;
-                     end;
-                     if ((hardStop <> 0) and (currentBetIndex >= hardStop)) then
-                     begin
-                        timer1.Enabled := false;
-                     end;
-                 end;
+        end else
+            begin
+                inc(currentBetIndex);
+                if (currentBetIndex > longestLoosingStreak) then
+                begin
+                  longestLoosingStreak := currentBetIndex;
+                end;
+                currentBet := getNextBet(currentBetIndex);
+                if (simulation.Checked) then
+                begin
+                  currentBet := 0;
+                end;
+                if ((hardStop <> 0) and (currentBetIndex >= hardStop)) then
+                begin
+                  timer1.Enabled := false;
+                end;
+            end;
         label4.Caption := floattostr(profitAvailableForTip);
         label6.Caption := inttostr(currentBetIndex);
         label8.Caption := floattostr(profitPerSesson);
