@@ -174,6 +174,7 @@ object Form3: TForm3
       Height = 21
       NumbersOnly = True
       TabOrder = 0
+      Text = '0'
     end
     object Edit7: TEdit
       Left = 96
@@ -182,6 +183,7 @@ object Form3: TForm3
       Height = 21
       NumbersOnly = True
       TabOrder = 1
+      Text = '0'
     end
     object CheckBox2: TCheckBox
       Left = 3
@@ -190,6 +192,28 @@ object Form3: TForm3
       Height = 17
       Caption = 'Revenge Betting'
       TabOrder = 2
+    end
+  end
+  object GroupBox2: TGroupBox
+    Left = 198
+    Top = 143
+    Width = 153
+    Height = 58
+    TabOrder = 12
+    object CheckBox3: TCheckBox
+      Left = 3
+      Top = 3
+      Width = 126
+      Height = 17
+      Caption = 'Switch Betprofil on Win'
+      TabOrder = 0
+    end
+    object ComboBox3: TComboBox
+      Left = 5
+      Top = 26
+      Width = 145
+      Height = 21
+      TabOrder = 1
     end
   end
 end

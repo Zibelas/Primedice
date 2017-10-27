@@ -66,6 +66,7 @@ type
     procedure loadBetProfiles();
     procedure tip(amount: integer);
     procedure parseUser(input: TJSONValue);
+    procedure loadBetProfil(betProfil: String);
     procedure split(input: string; listOfStrings: TStrings);
     function findMaxProfitForBalance(): Integer;
     function parseRequest(input: TJSONValue): boolean;
@@ -92,12 +93,12 @@ type
 
   end;
 
-type TUser = class
+type TUser = record
      apiKey: String;
      balance: extended;
 end;
 
-type TBetProfil = class
+type TBetProfil = record
      profit: integer;
      multiply: integer;
      zeroBets: integer;
@@ -109,9 +110,11 @@ type TBetProfil = class
      allowRevenge: boolean;
      revengeMultiply: integer;
      revengeTrigger: integer;
+     allowSwitchProfilOnWin: boolean;
+     nextBetProfil: string;
 end;
 
-type TTipProfil = class
+type TTipProfil = record
      receiver: String;
      percent: Integer;
      minAmount: Integer;
@@ -119,10 +122,8 @@ end;
 
 var
   Form1: TForm1;
-  //apiKey, condition, target,
   lastProfit: String;
 
-  //multiply,
   maxAmountOfRounds,  maxBetsPerRound, currentBetIndex,  currentRound: integer;
   lastBetWon, lastBetDone: boolean;
   onceWon: boolean;
@@ -132,7 +133,6 @@ var
   loadedBetProfil, inUseBetProfil: TBetProfil;
 
   id, roll, nonce: string;
-  //targetProfitPerRound,
   longestLoosingStreak, profitAvailableForTip: Integer;
   currentBet, profitPerSesson, tipPerSesson: extended;
   computedBetList, computedProfitList, computedCostList: Array of Extended;
@@ -170,10 +170,14 @@ begin
 end;
 
 procedure TForm1.ComboBox1Change(Sender: TObject);
+begin
+    loadBetProfil(combobox1.Items[combobox1.ItemIndex]);
+end;
+
+procedure TForm1.loadBetProfil(betProfil: String);
 var iniFile: TIniFile;
 begin
-    iniFile := TIniFile.Create('./bets/' + combobox1.Items[combobox1.ItemIndex]);
-    loadedBetProfil := TBetProfil.Create;
+    iniFile := TIniFile.Create('./bets/' + betProfil);
     try
         loadedBetProfil.profit := iniFile.ReadInteger('Betprofil', 'Profit', 0);
         loadedBetProfil.condition := iniFile.ReadString('Betprofil', 'Condition', '>');
@@ -183,16 +187,18 @@ begin
         loadedBetProfil.inverse := iniFile.ReadBool('Betprofil', 'Inverse', false);
         loadedBetProfil.minRounds := iniFile.ReadInteger('Betprofil', 'MinRounds', 0);
         loadedBetProfil.betType := TBetType(iniFile.ReadInteger('Betprofil', 'BetType', 0));
+        loadedBetProfil.allowSwitchProfilOnWin := iniFile.ReadBool('SwitchProfil', 'AllowSwitch', false);
+        loadedBetProfil.nextBetProfil := iniFile.ReadString('SwitchProfil', 'NextProfil', '');
     finally
         iniFile.Free;
     end;
+    inUseBetProfil := loadedBetProfil;
 end;
 
 procedure TForm1.ComboBox2Change(Sender: TObject);
 var iniFile: TIniFile;
 begin
     iniFile := TIniFile.Create('./user/' + combobox2.Items[combobox2.ItemIndex]);
-    currentUser := TUser.Create;
     try
         currentUser.apiKey := iniFile.ReadString('User', 'ApiKey', '');
     finally
@@ -208,7 +214,6 @@ procedure TForm1.ComboBox3Change(Sender: TObject);
 var iniFile: TIniFile;
 begin
     iniFile := TIniFile.Create('./tips/' + combobox3.Items[combobox3.ItemIndex]);
-    currentTipProfil := TTipProfil.Create;
     try
         currentTipProfil.receiver := iniFile.ReadString('Tipprofil', 'Receiver', '');
         currentTipProfil.percent := iniFile.ReadInteger('Tipprofil', 'Percent', 0);
@@ -274,19 +279,11 @@ end;
 
 procedure TForm1.Button1Click(Sender: TObject);
 begin
-//    apiKey := edit1.Text;
     maxAmountOfRounds := strtoint(edit10.Text);
-//    multiply := strtoint(edit11.Text);
-//    targetProfitPerRound := strtoint(edit2.Text);
-//    target := edit3.Text;
-    inUseBetProfil := TBetProfil.create();
-    inUseBetProfil := loadedBetProfil; // copy element
-    loadedBetProfil.profit := 666;
     longestLoosingStreak := 0;
     setLength(computedCostList, 0);
     setLength(computedProfitList, 0);
     setLength(computedBetList, 0);
-//    condition := combobox1.Items[combobox1.ItemIndex];
     RestClient1.BaseURL := 'https://api.primedice.com/api/bet?api_key=' + currentUser.apiKey;
     reset();
     if (inUseBetProfil.betType = ByMinRounds) then
@@ -302,6 +299,7 @@ begin
     lastBetDone := true;
     lastBetWon := false;
     button1.Enabled := false;
+    combobox1.Enabled := false;
 end;
 
 function TForm1.findMaxProfitForBalance(): Integer;
@@ -342,6 +340,7 @@ procedure TForm1.Button2Click(Sender: TObject);
 begin
     timer1.Enabled := false;
     button1.Enabled := true;
+    combobox1.Enabled := true;
 end;
 
 procedure TForm1.resetStatistic();
@@ -416,6 +415,10 @@ begin
             profitPerSesson := profitPerSesson + computedProfitList[currentBetIndex];
             profitAvailableForTip := profitAvailableForTip + round(computedProfitList[currentBetIndex]);
             reset();
+            if (inUseBetProfil.allowSwitchProfilOnWin) then
+            begin
+                loadBetProfil(inUseBetProfil.nextBetProfil);
+            end;
             if (inUseBetProfil.betType = ByProfit) then
             begin
                 inUseBetProfil.profit := loadedBetProfil.profit;
@@ -424,9 +427,6 @@ begin
             begin
                 if (findMaxProfitForBalance() <> inUseBetProfil.profit) then
                 begin
-                    setLength(computedCostList, 0);
-                    setLength(computedProfitList, 0);
-                    setLength(computedBetList, 0);
                     inUseBetProfil.profit := findMaxProfitForBalance();
                 end;
             end;
@@ -486,6 +486,9 @@ begin
     currentBetIndex := 0;
     onceWon := false;
     lastBetWon := false;
+    setLength(computedCostList, 0);
+    setLength(computedProfitList, 0);
+    setLength(computedBetList, 0);
 end;
 
 function TForm1.parseForDisplayBet(currentBetIndex: Integer): string;

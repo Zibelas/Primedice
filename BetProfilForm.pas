@@ -31,6 +31,9 @@ type
     Edit7: TEdit;
     CheckBox2: TCheckBox;
     Label6: TLabel;
+    GroupBox2: TGroupBox;
+    CheckBox3: TCheckBox;
+    ComboBox3: TComboBox;
     procedure loadProfiles;
     procedure clearData();
     function calculateRollByMultiply(condition: String; multiply: Integer): String;
@@ -69,6 +72,8 @@ begin
         iniFile.WriteBool('Revenge', 'AllowRevange', checkbox2.Checked);
         iniFile.WriteInteger('Revenge', 'Multiply', strtoint(edit6.Text));
         iniFile.WriteInteger('Revenge', 'TriggerTime', strtoint(edit7.Text));
+        iniFile.WriteBool('SwitchProfil', 'AllowSwitch', checkbox3.Checked);
+        iniFile.WriteString('SwitchProfil', 'NextProfil', combobox3.Items[combobox3.ItemIndex]);
     finally
         iniFile.Free;
     end;
@@ -89,6 +94,8 @@ begin
         edit5.Text := inttostr(iniFile.ReadInteger('Betprofil', 'MinRounds', 0));
         checkbox1.checked := iniFile.ReadBool('Betprofil', 'Inverse', false);
         RadioGroup1.ItemIndex := iniFile.ReadInteger('Betprofil', 'BetType', 0);
+        checkbox3.Checked := iniFile.ReadBool('SwitchProfil', 'AllowSwitch', false);
+        combobox3.Text := iniFile.ReadString('SwitchProfil', 'NextProfil', '');
     finally
         iniFile.Free;
     end;
@@ -131,6 +138,9 @@ begin
     Combobox2.Clear;
     for path in TDirectory.GetFiles('./bets/') do
         Combobox2.Items.Add(path.Remove(0, 7));
+    Combobox3.Clear;
+    for path in TDirectory.GetFiles('./bets/') do
+        Combobox3.Items.Add(path.Remove(0, 7));
 end;
 
 procedure TForm3.clearData();
@@ -143,6 +153,8 @@ begin
     edit11.Text := '';
     combobox1.Text := '>';
     checkbox1.Checked := false;
+    checkbox2.Checked := false;
+    checkbox3.Checked := false;
     RadioGroup1.ItemIndex := 0;
 end;
 
