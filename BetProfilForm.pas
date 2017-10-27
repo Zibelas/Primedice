@@ -4,14 +4,13 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Inifiles, IOUtils, Math;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Inifiles, IOUtils, Math,
+  Vcl.ExtCtrls;
 
 type
   TForm3 = class(TForm)
-    Label2: TLabel;
     Label4: TLabel;
     Label13: TLabel;
-    Edit2: TEdit;
     ComboBox1: TComboBox;
     Edit11: TEdit;
     ComboBox2: TComboBox;
@@ -23,6 +22,15 @@ type
     CheckBox1: TCheckBox;
     Label1: TLabel;
     Edit4: TEdit;
+    RadioGroup1: TRadioGroup;
+    Edit2: TEdit;
+    Edit5: TEdit;
+    GroupBox1: TGroupBox;
+    Label2: TLabel;
+    Edit6: TEdit;
+    Edit7: TEdit;
+    CheckBox2: TCheckBox;
+    Label6: TLabel;
     procedure loadProfiles;
     procedure clearData();
     function calculateRollByMultiply(condition: String; multiply: Integer): String;
@@ -35,6 +43,8 @@ type
   public
     { Public declarations }
   end;
+
+type TBetType = (ByProfit = 0, ByMinRounds = 1);
 
 var
   Form3: TForm3;
@@ -54,6 +64,11 @@ begin
         iniFile.WriteInteger('Betprofil', 'Multiply', strtoint(edit11.Text));
         iniFile.WriteBool('Betprofil', 'Inverse', checkbox1.checked);
         iniFile.WriteInteger('Betprofil', 'ZeroBets', strtoint(edit4.Text));
+        iniFile.WriteInteger('Betprofil', 'MinRounds', strtoint(edit5.Text));
+        iniFile.WriteInteger('Betprofil', 'BetType', RadioGroup1.ItemIndex);
+        iniFile.WriteBool('Revenge', 'AllowRevange', checkbox2.Checked);
+        iniFile.WriteInteger('Revenge', 'Multiply', strtoint(edit6.Text));
+        iniFile.WriteInteger('Revenge', 'TriggerTime', strtoint(edit7.Text));
     finally
         iniFile.Free;
     end;
@@ -71,8 +86,9 @@ begin
         combobox1.Text := iniFile.ReadString('Betprofil', 'Condition', '>');
         edit3.Text := iniFile.ReadString('Betprofil', 'Target', '');
         edit4.Text := inttostr(iniFile.ReadInteger('Betprofil', 'ZeroBets', 0));
-
-        checkbox1.checked := iniFile.ReadBool('BetProfil', 'Inverse', false);
+        edit5.Text := inttostr(iniFile.ReadInteger('Betprofil', 'MinRounds', 0));
+        checkbox1.checked := iniFile.ReadBool('Betprofil', 'Inverse', false);
+        RadioGroup1.ItemIndex := iniFile.ReadInteger('Betprofil', 'BetType', 0);
     finally
         iniFile.Free;
     end;
@@ -120,12 +136,14 @@ end;
 procedure TForm3.clearData();
 begin
     edit1.Text := '';
-    edit2.Text := '';
+    edit2.Text := '0';
     edit3.Text := '';
     edit4.Text := '0';
+    edit5.Text := '0';
     edit11.Text := '';
     combobox1.Text := '>';
     checkbox1.Checked := false;
+    RadioGroup1.ItemIndex := 0;
 end;
 
 end.
