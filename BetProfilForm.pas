@@ -34,20 +34,37 @@ type
     GroupBox2: TGroupBox;
     CheckBox3: TCheckBox;
     ComboBox3: TComboBox;
+    GroupBox3: TGroupBox;
+    GroupBox4: TGroupBox;
+    ListBox1: TListBox;
+    Edit8: TEdit;
+    Label7: TLabel;
+    Label8: TLabel;
+    Edit9: TEdit;
+    ComboBox4: TComboBox;
+    Button2: TButton;
+    Button3: TButton;
+    Button4: TButton;
     procedure loadProfiles;
     procedure clearData();
+    procedure split(input: string; listOfStrings: TStrings);
     function calculateRollByMultiply(condition: String; multiply: Integer): String;
     procedure Button1Click(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure Edit11Change(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
+    procedure RadioGroup1Click(Sender: TObject);
+    procedure ListBox1Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
   private
     { Private declarations }
   public
     { Public declarations }
   end;
 
-type TBetType = (ByProfit = 0, ByMinRounds = 1);
+type TBetType = (ByProfit = 0, ByMinRounds = 1, BySelector = 2);
 
 var
   Form3: TForm3;
@@ -62,6 +79,7 @@ begin
     iniFile := TIniFile.Create('./bets/' + ChangeFileExt(edit1.Text, '.ini'));
     try
         iniFile.WriteInteger('Betprofil', 'Profit', strtoint(edit2.Text));
+        iniFile.WriteString('Betprofil', 'Name', edit1.Text);
         iniFile.WriteString('Betprofil', 'Target', edit3.Text);
         iniFile.WriteString('Betprofil', 'Condition', combobox1.Items[combobox1.ItemIndex]);
         iniFile.WriteInteger('Betprofil', 'Multiply', strtoint(edit11.Text));
@@ -77,6 +95,10 @@ begin
     finally
         iniFile.Free;
     end;
+    if (RadioGroup1.ItemIndex = 2) then
+    begin
+        listbox1.Items.SaveToFile('./bets/selector/selector_'+ ChangeFileExt(edit1.Text, '.ini'));
+    end;
     loadProfiles();
 end;
 
@@ -85,7 +107,7 @@ var iniFile: TIniFile;
 begin
     iniFile := TIniFile.Create('./bets/' + combobox2.Items[combobox2.ItemIndex]);
     try
-        edit1.Text := combobox2.Items[combobox2.ItemIndex].Remove(combobox2.Items[combobox2.ItemIndex].IndexOf('.', 4));
+        edit1.Text := iniFile.ReadString('Betprofil', 'Name', '');
         edit2.Text := inttostr(iniFile.ReadInteger('Betprofil', 'Profit', 0));
         edit11.Text := inttostr(iniFile.ReadInteger('Betprofil', 'Multiply', 0));
         combobox1.Text := iniFile.ReadString('Betprofil', 'Condition', '>');
@@ -113,6 +135,24 @@ begin
     end;
 end;
 
+procedure TForm3.Button2Click(Sender: TObject);
+begin
+    Listbox1.Items.Add(Edit8.Text + ':' + edit9.Text + ':' + combobox4.items[combobox4.ItemIndex]);
+    edit8.Text := '';
+    edit9.Text := '';
+    combobox4.Text := '';
+end;
+
+procedure TForm3.Button3Click(Sender: TObject);
+begin
+    Listbox1.Items.Delete(listbox1.ItemIndex);
+end;
+
+procedure TForm3.Button4Click(Sender: TObject);
+begin
+    listbox1.items[listbox1.ItemIndex] := Edit8.Text + ':' + edit9.Text + ':' + combobox4.items[combobox4.ItemIndex];
+end;
+
 function TForm3.calculateRollByMultiply(condition: String; multiply: Integer): String;
 begin
     if (condition = '>') then
@@ -130,17 +170,49 @@ begin
     clearData();
 end;
 
+procedure TForm3.split(input: string; listOfStrings: TStrings);
+begin
+   listOfStrings.Clear;
+   listOfStrings.Delimiter       := ':';
+   listOfStrings.StrictDelimiter := True;
+   listOfStrings.DelimitedText   := input;
+end;
+
+procedure TForm3.ListBox1Click(Sender: TObject);
+var lineData: TStringList;
+begin
+    lineData := TStringList.Create();
+    split(listbox1.Items[listbox1.ItemIndex], lineData);
+    edit8.Text := lineData[0];
+    edit9.Text := lineData[1];
+    combobox4.text := lineData[2];
+    lineData.Free;
+end;
+
 procedure TForm3.loadProfiles();
 var path: String;
 begin
     if not DirectoryExists('./bets/') then
            CreateDir('./bets');
+    if not DirectoryExists('./bets/selector/') then
+           CreateDir('./bets/selector');
     Combobox2.Clear;
     for path in TDirectory.GetFiles('./bets/') do
         Combobox2.Items.Add(path.Remove(0, 7));
     Combobox3.Clear;
     for path in TDirectory.GetFiles('./bets/') do
         Combobox3.Items.Add(path.Remove(0, 7));
+    Combobox4.Clear;
+    for path in TDirectory.GetFiles('./bets/') do
+        Combobox4.Items.Add(path.Remove(0, 7));
+end;
+
+procedure TForm3.RadioGroup1Click(Sender: TObject);
+begin
+    if (RadioGroup1.ItemIndex = 2) and(FileExists('./bets/selector/selector_'+ ChangeFileExt(edit1.Text, '.ini'))) then
+    begin
+        listbox1.Items.LoadFromFile('./bets/selector/selector_'+ ChangeFileExt(edit1.Text, '.ini'));
+    end;
 end;
 
 procedure TForm3.clearData();

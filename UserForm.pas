@@ -14,6 +14,8 @@ type
     Edit1: TEdit;
     Edit2: TEdit;
     Button1: TButton;
+    Edit3: TEdit;
+    Label3: TLabel;
     procedure Button1Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure ComboBox1Change(Sender: TObject);
@@ -37,6 +39,7 @@ begin
     iniFile := TIniFile.Create('./user/' + ChangeFileExt(edit1.Text, '.ini'));
     try
         iniFile.WriteString('User', 'ApiKey', edit2.Text);
+        iniFile.WriteString('User', 'Name', edit3.Text);
     finally
         iniFile.Free;
     end;
@@ -50,6 +53,7 @@ begin
     try
         edit1.Text := combobox1.Items[combobox1.ItemIndex].Remove(combobox1.Items[combobox1.ItemIndex].IndexOf('.', 4));
         edit2.Text := iniFile.ReadString('User', 'ApiKey', '');
+        edit3.Text := iniFile.ReadString('User', 'Name', '');
     finally
         iniFile.Free;
     end;

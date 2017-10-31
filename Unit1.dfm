@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'PrimeDice'
-  ClientHeight = 500
-  ClientWidth = 215
+  ClientHeight = 534
+  ClientWidth = 427
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -132,9 +132,24 @@ object Form1: TForm1
     Caption = '0'
     ParentBiDiMode = False
   end
-  object Button1: TButton
-    Left = 170
+  object Label16: TLabel
+    Left = 8
     Top = 466
+    Width = 64
+    Height = 13
+    Caption = 'Current Profil'
+  end
+  object Label17: TLabel
+    Left = 208
+    Top = 466
+    Width = 3
+    Height = 13
+    BiDiMode = bdRightToLeft
+    ParentBiDiMode = False
+  end
+  object Button1: TButton
+    Left = 168
+    Top = 498
     Width = 40
     Height = 25
     Caption = 'Bet'
@@ -150,8 +165,8 @@ object Form1: TForm1
     TabOrder = 1
   end
   object Button2: TButton
-    Left = 10
-    Top = 466
+    Left = 8
+    Top = 498
     Width = 38
     Height = 25
     Caption = 'Stop'
@@ -197,6 +212,23 @@ object Form1: TForm1
     Height = 21
     TabOrder = 7
     OnChange = ComboBox3Change
+  end
+  object ListBox2: TListBox
+    Left = 224
+    Top = 16
+    Width = 161
+    Height = 324
+    ItemHeight = 13
+    TabOrder = 8
+  end
+  object Button3: TButton
+    Left = 310
+    Top = 346
+    Width = 75
+    Height = 25
+    Caption = 'Button3'
+    TabOrder = 9
+    OnClick = Button3Click
   end
   object RESTRequest1: TRESTRequest
     Client = RESTClient1

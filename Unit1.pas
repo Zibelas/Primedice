@@ -7,7 +7,31 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, IPPeerClient, REST.Client, System.JSON,
   Data.Bind.Components, Data.Bind.ObjectScope, Vcl.StdCtrls, System.Rtti,
   System.Bindings.Outputs, Vcl.Bind.Editors, Data.Bind.EngExt, Vcl.Bind.DBEngExt,
-  Vcl.ExtCtrls, System.Math, REST.HttpClient, Inifiles, Vcl.Menus, IOUtils, StrUtils, BetProfilForm;
+  Vcl.ExtCtrls, Math, REST.HttpClient, Inifiles, Vcl.Menus, IOUtils, StrUtils, BetProfilForm;
+
+type TSwitchCondition = record
+     multiply: Integer;
+     switchCondition: Integer;
+     nextBetProfil: string;
+end;
+
+type TBetProfil = record
+     profilName: String;
+     profit: integer;
+     multiply: integer;
+     zeroBets: integer;
+     inverse: boolean;
+     condition: String;
+     target: String;
+     minRounds: integer;
+     betType: TBetType;
+     allowRevenge: boolean;
+     revengeMultiply: integer;
+     revengeTrigger: integer;
+     allowSwitchProfilOnWin: boolean;
+     nextBetProfil: string;
+     switchConditions: array of TSwitchCondition;
+end;
 
 type
   TForm1 = class(TForm)
@@ -56,6 +80,10 @@ type
     RESTRequest3: TRESTRequest;
     RESTResponse3: TRESTResponse;
     RESTClient3: TRESTClient;
+    ListBox2: TListBox;
+    Button3: TButton;
+    Label16: TLabel;
+    Label17: TLabel;
     procedure Button1Click(Sender: TObject);
     procedure betBySetProfit(amount: double; target, condition: string);
     procedure reset();
@@ -66,9 +94,17 @@ type
     procedure loadBetProfiles();
     procedure tip(amount: integer);
     procedure parseUser(input: TJSONValue);
-    procedure loadBetProfil(betProfil: String);
+    function loadBetProfil(betProfil: String): TBetProfil;
     procedure split(input: string; listOfStrings: TStrings);
+    procedure writeRollHistory();
+    procedure readRollHistory();
+    procedure test();
+    procedure addOneToAllAbove(index: Integer);
+    procedure addOneToAllBelow(index: Integer);
     function findMaxProfitForBalance(): Integer;
+    procedure displayHistoryBets();
+    procedure doPrint(index: Integer);
+    function searchForSelectorProfil(): TBetProfil;
     function parseRequest(input: TJSONValue): boolean;
     function parseForDisplayBet(currentBetIndex: Integer): string;
     function getNextBet(round: Integer): Extended;
@@ -87,6 +123,7 @@ type
     procedure Resetstatistik1Click(Sender: TObject);
     procedure BasicRoundCalc1Click(Sender: TObject);
     procedure BasicSurvivalCalc1Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
   private
 
   public
@@ -95,23 +132,8 @@ type
 
 type TUser = record
      apiKey: String;
+     userName: String;
      balance: extended;
-end;
-
-type TBetProfil = record
-     profit: integer;
-     multiply: integer;
-     zeroBets: integer;
-     inverse: boolean;
-     condition: String;
-     target: String;
-     minRounds: integer;
-     betType: TBetType;
-     allowRevenge: boolean;
-     revengeMultiply: integer;
-     revengeTrigger: integer;
-     allowSwitchProfilOnWin: boolean;
-     nextBetProfil: string;
 end;
 
 type TTipProfil = record
@@ -125,7 +147,7 @@ var
   lastProfit: String;
 
   maxAmountOfRounds,  maxBetsPerRound, currentBetIndex,  currentRound: integer;
-  lastBetWon, lastBetDone: boolean;
+  lastBetWon, lastBetSelector: boolean;
   onceWon: boolean;
 
   currentUser: TUser;
@@ -136,6 +158,8 @@ var
   longestLoosingStreak, profitAvailableForTip: Integer;
   currentBet, profitPerSesson, tipPerSesson: extended;
   computedBetList, computedProfitList, computedCostList: Array of Extended;
+
+  pastRolls: array[0..9999, 1..2] of Integer;
 
 implementation
 
@@ -171,28 +195,52 @@ end;
 
 procedure TForm1.ComboBox1Change(Sender: TObject);
 begin
-    loadBetProfil(combobox1.Items[combobox1.ItemIndex]);
+    inUseBetProfil := loadBetProfil(combobox1.Items[combobox1.ItemIndex]);
 end;
 
-procedure TForm1.loadBetProfil(betProfil: String);
-var iniFile: TIniFile;
+function TForm1.loadBetProfil(betProfil: String): TBetProfil;
+var returnBetProfil: TBetProfil;
+    iniFile: TIniFile;
+    index: Integer;
+    fileData, lineData: TStringlist;
 begin
     iniFile := TIniFile.Create('./bets/' + betProfil);
     try
-        loadedBetProfil.profit := iniFile.ReadInteger('Betprofil', 'Profit', 0);
-        loadedBetProfil.condition := iniFile.ReadString('Betprofil', 'Condition', '>');
-        loadedBetProfil.zeroBets := iniFile.ReadInteger('Betprofil', 'ZeroBets', 0);
-        loadedBetProfil.target := iniFile.ReadString('Betprofil', 'Target', '');
-        loadedBetProfil.multiply := iniFile.ReadInteger('Betprofil', 'Multiply', 0);
-        loadedBetProfil.inverse := iniFile.ReadBool('Betprofil', 'Inverse', false);
-        loadedBetProfil.minRounds := iniFile.ReadInteger('Betprofil', 'MinRounds', 0);
-        loadedBetProfil.betType := TBetType(iniFile.ReadInteger('Betprofil', 'BetType', 0));
-        loadedBetProfil.allowSwitchProfilOnWin := iniFile.ReadBool('SwitchProfil', 'AllowSwitch', false);
-        loadedBetProfil.nextBetProfil := iniFile.ReadString('SwitchProfil', 'NextProfil', '');
+        returnBetProfil.profit := iniFile.ReadInteger('Betprofil', 'Profit', 0);
+        returnBetProfil.profilName := iniFile.ReadString('Betprofil', 'Name', '');
+        returnBetProfil.condition := iniFile.ReadString('Betprofil', 'Condition', '>');
+        returnBetProfil.zeroBets := iniFile.ReadInteger('Betprofil', 'ZeroBets', 0);
+        returnBetProfil.target := iniFile.ReadString('Betprofil', 'Target', '');
+        returnBetProfil.multiply := iniFile.ReadInteger('Betprofil', 'Multiply', 0);
+        returnBetProfil.inverse := iniFile.ReadBool('Betprofil', 'Inverse', false);
+        returnBetProfil.minRounds := iniFile.ReadInteger('Betprofil', 'MinRounds', 0);
+        returnBetProfil.betType := TBetType(iniFile.ReadInteger('Betprofil', 'BetType', 0));
+        returnBetProfil.allowSwitchProfilOnWin := iniFile.ReadBool('SwitchProfil', 'AllowSwitch', false);
+        returnBetProfil.nextBetProfil := iniFile.ReadString('SwitchProfil', 'NextProfil', '');
+        if (returnBetProfil.betType = TBetType.BySelector) then
+        begin
+            fileData := TStringlist.Create;
+            lineData := TStringlist.Create;
+            if (FileExists('./bets/selector/selector_' + betProfil)) then
+            begin
+                fileData.LoadFromFile('./bets/selector/selector_' + betProfil);
+                setLength(returnBetProfil.switchConditions, fileData.Count);
+                for index := 0 to fileData.Count - 1 do
+                begin
+                    split(fileData[index], lineData);
+                    returnBetProfil.switchConditions[index].multiply := strtoint(lineData[0]);
+                    returnBetProfil.switchConditions[index].switchCondition := strtoint(lineData[1]);
+                    returnBetProfil.switchConditions[index].nextBetProfil := lineData[2];
+                end;
+                fileData.Free;
+                lineData.Free;
+            end;
+        end;
     finally
         iniFile.Free;
     end;
-    inUseBetProfil := loadedBetProfil;
+    loadedBetProfil := returnBetProfil;
+    result := returnBetProfil;
 end;
 
 procedure TForm1.ComboBox2Change(Sender: TObject);
@@ -201,6 +249,7 @@ begin
     iniFile := TIniFile.Create('./user/' + combobox2.Items[combobox2.ItemIndex]);
     try
         currentUser.apiKey := iniFile.ReadString('User', 'ApiKey', '');
+        currentUser.userName := iniFile.ReadString('User', 'Name', '');
     finally
         iniFile.Free;
     end;
@@ -208,6 +257,7 @@ begin
     RESTRequest3.Execute;
     parseUser(RestResponse3.JSONValue);
     label15.Caption := floattostr(currentUser.balance);
+    readRollHistory();
 end;
 
 procedure TForm1.ComboBox3Change(Sender: TObject);
@@ -253,6 +303,8 @@ var path: String;
 begin
     if not DirectoryExists('./bets/') then
            CreateDir('./bets');
+    if not DirectoryExists('./bets/selector/') then
+           CreateDir('./bets/selector');
     if not DirectoryExists('./preCalc/') then
            CreateDir('./preCalc');
     Combobox1.Clear;
@@ -277,6 +329,37 @@ begin
     result := computedBetList[round];
 end;
 
+function TForm1.searchForSelectorProfil(): TBetProfil;
+var returnProfil: TBetProfil;
+    index, multiply, high, low: Integer;
+begin
+    returnProfil := loadedBetProfil;
+    currentBet := 0;
+    for index := 0 to length(inUseBetProfil.switchConditions) -1 do
+    begin
+        multiply := inUseBetProfil.switchConditions[index].multiply;
+        low := trunc(Math.RoundTo(99 / multiply, -2) * 100);
+        high := trunc(Math.RoundTo(100 - (99 / multiply), -2) * 100);
+        if (pastRolls[high, 1] > pastRolls[low, 2]) then
+        begin
+            if (inUseBetProfil.switchConditions[index].switchCondition <= pastRolls[high, 1]) then
+            begin
+                returnProfil := loadBetProfil(inUseBetProfil.switchConditions[index].nextBetProfil);
+                returnProfil.allowSwitchProfilOnWin := true;
+                returnProfil.nextBetProfil := inUseBetProfil.profilName + '.ini';
+            end;
+        end else if (inUseBetProfil.switchConditions[index].switchCondition <= pastRolls[low, 2]) then
+            begin
+                returnProfil := loadBetProfil(inUseBetProfil.switchConditions[index].nextBetProfil);
+                returnProfil.condition := ifthen(returnProfil.condition = '>', '<', '>');
+                returnProfil.target := Form3.calculateRollByMultiply(returnProfil.condition, returnProfil.multiply);
+                returnProfil.allowSwitchProfilOnWin := true;
+                returnProfil.nextBetProfil := inUseBetProfil.profilName + '.ini';
+            end;
+    end;
+    result := returnProfil;
+end;
+
 procedure TForm1.Button1Click(Sender: TObject);
 begin
     maxAmountOfRounds := strtoint(edit10.Text);
@@ -286,6 +369,11 @@ begin
     setLength(computedBetList, 0);
     RestClient1.BaseURL := 'https://api.primedice.com/api/bet?api_key=' + currentUser.apiKey;
     reset();
+    lastBetSelector := false;
+    if (inUseBetProfil.betType = BySelector) then
+    begin
+        inUseBetProfil := searchForSelectorProfil();
+    end;
     if (inUseBetProfil.betType = ByMinRounds) then
     begin
         inUseBetProfil.profit := findMaxProfitForBalance();
@@ -295,11 +383,33 @@ begin
     begin
         currentBet := 0;
     end;
+    if (inUseBetProfil.betType = BySelector) then
+    begin
+        lastBetSelector := true;
+    end;
     timer1.Enabled := true;
-    lastBetDone := true;
     lastBetWon := false;
     button1.Enabled := false;
     combobox1.Enabled := false;
+end;
+
+procedure TForm1.displayHistoryBets();
+begin
+    doPrint(2);
+    doPrint(5);
+    doPrint(10);
+    doPrint(25);
+    doPrint(50);
+    doPrint(75);
+    doPrint(100);
+    doPrint(150);
+    doPrint(200);
+    doPrint(250);
+    doPrint(300);
+    doPrint(500);
+    doPrint(750);
+    doPrint(1000);
+    doPrint(1250);
 end;
 
 function TForm1.findMaxProfitForBalance(): Integer;
@@ -312,7 +422,7 @@ begin
     profit := 0;
     fileName := 'preCalc/' + inttostr(inUseBetProfil.minRounds) + '_' + inttostr(inUseBetProfil.multiply) + '.txt';
     fileData.LoadFromFile(fileName);
-    for index := 0 to fileData.Count do
+    for index := 0 to fileData.Count - 1 do
     begin
         split(fileData[index], lineData);
         if (strtofloat(lineData[0]) <= currentUser.balance) then
@@ -341,6 +451,37 @@ begin
     timer1.Enabled := false;
     button1.Enabled := true;
     combobox1.Enabled := true;
+end;
+
+procedure TForm1.addOneToAllAbove(index: Integer);
+var i: Integer;
+begin
+    for I := index to 9999 do
+        pastRolls[i, 1] := pastRolls[i, 1] + 1;
+    for I := 0 to index do
+        pastRolls[i, 1] := 0;
+end;
+
+procedure TForm1.addOneToAllBelow(index: Integer);
+var i: Integer;
+begin
+    for I := 0 to index do
+        pastRolls[i, 2] := pastRolls[i, 2] + 1;
+    for I := index to 9999 do
+        pastRolls[i, 2] := 0;
+end;
+
+procedure TForm1.doPrint(index: Integer);
+var low, high: Integer;
+begin
+    low := trunc(Math.RoundTo(99 / index, -2) * 100);
+    high := trunc(Math.RoundTo(100 - (99 / index), -2) * 100);
+    Listbox2.Items.Add(inttostr(index) + ':High(' + (inttostr(pastRolls[high, 1])) + '):Low(' + (inttostr(pastRolls[low, 2])) + ')');
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+begin
+    test();
 end;
 
 procedure TForm1.resetStatistic();
@@ -408,76 +549,94 @@ begin
     if (RestResponse1.StatusCode = 200) then
     begin
         lastBetWon := parseRequest(RestResponse1.JSONValue);
-        if (lastBetWon) then
+        if (inUseBetProfil.betType = BySelector) then
         begin
-            inc(currentRound);
-            listbox1.Items.Add(parseForDisplayBet(currentBetIndex));
-            profitPerSesson := profitPerSesson + computedProfitList[currentBetIndex];
-            profitAvailableForTip := profitAvailableForTip + round(computedProfitList[currentBetIndex]);
-            reset();
-            if (inUseBetProfil.allowSwitchProfilOnWin) then
+            inUseBetProfil := searchForSelectorProfil();
+            if (inUseBetProfil.betType <> BySelector) then
             begin
-                loadBetProfil(inUseBetProfil.nextBetProfil);
+                lastBetWon := true;
+                lastBetSelector := true;
             end;
-            if (inUseBetProfil.betType = ByProfit) then
+        end;
+        test();
+        if not (inUseBetProfil.betType = BySelector) then
+        begin
+            if (lastBetWon) then
             begin
-                inUseBetProfil.profit := loadedBetProfil.profit;
-            end;
-            if (inUseBetProfil.betType = ByMinRounds) then
-            begin
-                if (findMaxProfitForBalance() <> inUseBetProfil.profit) then
+                if (not lastBetSelector) then
                 begin
-                    inUseBetProfil.profit := findMaxProfitForBalance();
+                    inc(currentRound);
+                    listbox1.Items.Add(parseForDisplayBet(currentBetIndex));
+                    profitPerSesson := profitPerSesson + computedProfitList[currentBetIndex];
+                    profitAvailableForTip := profitAvailableForTip + round(computedProfitList[currentBetIndex]);
                 end;
-            end;
-            if (inUseBetProfil.allowRevenge) then
-            begin
-                inUseBetProfil.profit := inUseBetProfil.profit * inUseBetProfil.revengeMultiply;
-            end;
-            if (inUseBetProfil.inverse) then
-            begin
-                inUseBetProfil.condition := ifthen(inUseBetProfil.condition = '>', '<', '>');
-                inUseBetProfil.target := Form3.calculateRollByMultiply(inUseBetProfil.condition, inUseBetProfil.multiply);
-            end;
-            currentBet := getNextBet(currentBetIndex);
-            if (checkbox3.Checked) then
-            begin
-                if (profitAvailableForTip * 100 div currentTipProfil.percent) >= currentTipProfil.minAmount then
+                reset();
+                if (inUseBetProfil.allowSwitchProfilOnWin and not lastBetSelector) then
                 begin
-                    tip(profitAvailableForTip * 100 div currentTipProfil.percent);
-                    tipPerSesson := tipPerSesson + (profitAvailableForTip div currentTipProfil.percent);
-                    profitAvailableForTip := 0;
+                    inUseBetProfil := loadBetProfil(inUseBetProfil.nextBetProfil);
                 end;
-            end;
-            if (simulation.Checked) then
-            begin
-                currentBet := 0;
-            end;
-            if ((currentRound  >= maxAmountofRounds) or (endafterround.checked = true)) then
-            begin
-                timer1.Enabled := false;
-                button1.Enabled := true;
-                endafterround.Checked := false;
-            end;
-        end else
-            begin
-                inc(currentBetIndex);
-                if (currentBetIndex > longestLoosingStreak) then
+                if (inUseBetProfil.betType = ByProfit) then
                 begin
-                    longestLoosingStreak := currentBetIndex;
+                    inUseBetProfil.profit := loadedBetProfil.profit;
+                end;
+                if (inUseBetProfil.betType = ByMinRounds) then
+                begin
+                    if (findMaxProfitForBalance() <> inUseBetProfil.profit) then
+                    begin
+                        inUseBetProfil.profit := findMaxProfitForBalance();
+                    end;
+                end;
+                if (inUseBetProfil.allowRevenge and not lastBetSelector) then
+                begin
+                    inUseBetProfil.profit := inUseBetProfil.profit * inUseBetProfil.revengeMultiply;
+                end;
+                if (inUseBetProfil.inverse and not lastBetSelector) then
+                begin
+                    inUseBetProfil.condition := ifthen(inUseBetProfil.condition = '>', '<', '>');
+                    inUseBetProfil.target := Form3.calculateRollByMultiply(inUseBetProfil.condition, inUseBetProfil.multiply);
                 end;
                 currentBet := getNextBet(currentBetIndex);
+                if (checkbox3.Checked) then
+                begin
+                    if (profitAvailableForTip * 100 div currentTipProfil.percent) >= currentTipProfil.minAmount then
+                    begin
+                        tip(profitAvailableForTip * 100 div currentTipProfil.percent);
+                        tipPerSesson := tipPerSesson + (profitAvailableForTip div currentTipProfil.percent);
+                        profitAvailableForTip := 0;
+                    end;
+                end;
                 if (simulation.Checked) then
                 begin
                     currentBet := 0;
                 end;
-            end;
+                if ((currentRound  >= maxAmountofRounds) or (endafterround.checked = true)) then
+                begin
+                    timer1.Enabled := false;
+                    button1.Enabled := true;
+                    endafterround.Checked := false;
+                end;
+                lastBetSelector := false;
+            end else
+                begin
+                    inc(currentBetIndex);
+                    if (currentBetIndex > longestLoosingStreak) then
+                    begin
+                        longestLoosingStreak := currentBetIndex;
+                    end;
+                    currentBet := getNextBet(currentBetIndex);
+                    if (simulation.Checked) then
+                    begin
+                        currentBet := 0;
+                    end;
+                end;
+        end;
         label15.Caption := floattostr(currentUser.balance);
         label4.Caption := floattostr(profitAvailableForTip);
         label6.Caption := inttostr(currentBetIndex);
         label8.Caption := floattostr(profitPerSesson);
         label10.Caption := inttostr(currentRound);
         label14.Caption := inttostr(longestLoosingStreak);
+        label17.Caption := inUseBetProfil.profilName;
     end;
 end;
 
@@ -506,6 +665,12 @@ begin
     writeLog(result + ':' + id + ':' + nonce, 'log.txt');
 end;
 
+procedure TForm1.test();
+begin
+    Listbox2.Clear;
+    displayHistoryBets();
+end;
+
 function TForm1.parseRequest(input: TJSONValue): boolean;
 var jObject, betJSON: TJSONObject;
 begin
@@ -514,6 +679,9 @@ begin
     parseUser(input);
     id := betJSON.Values['id'].Value;
     roll := betJSON.Values['roll'].Value;
+    addOneToAllAbove(trunc(strtofloat(roll) * 100));
+    addOneToAllBelow(trunc(strtofloat(roll) * 100));
+    writeRollHistory();
     writeLog(roll + ':' + nonce + ':' + id, 'pastRolls.txt');
     nonce := betJSON.Values['nonce'].Value;
     if (roll.Equals('77.77')) then
@@ -522,7 +690,6 @@ begin
     end;
     lastProfit := betJSON.Values['profit'].Value;
     lastBetWon := StrToBool(betJSON.Values['win'].value);
-    //listbox1.Items.Add('ID: ' + id + ', roll: ' + roll + ' betAmount: ' + floatToStr(lastBetAmount) + ' win: ' + BoolToStr(lastBetWon));
     result := lastBetWon;
 end;
 
@@ -532,6 +699,50 @@ begin
     jObject := input as TJSONObject;
     userJSON := jObject.Values['user'] as TJSONObject;
     currentUser.balance := strtofloat(userJSON.Values['balance'].Value);
+end;
+
+procedure TForm1.writeRollHistory();
+var f: TextFile;
+    fileName: String;
+    index: Integer;
+begin
+    fileName := currentUser.userName + '_pastRolls.txt';
+    AssignFile(f, fileName);
+    Rewrite(f);
+    for index := 0 to 9999 do
+    begin
+        Writeln(f, inttostr(index) + ':' + inttostr(pastrolls[index, 1]) + ':' + inttostr(pastrolls[index, 2]));
+    end;
+    CloseFile(f);
+end;
+
+procedure TForm1.readRollHistory();
+var fileName: String;
+    index: Integer;
+    fileData, lineData: TStringList;
+begin
+    fileName := currentUser.userName + '_pastRolls.txt';
+    if FileExists(fileName) then
+    begin
+        fileData := TStringList.Create;
+        lineData := TStringList.Create;
+        fileData.LoadFromFile(currentUser.userName + '_pastRolls.txt');
+        for index := 0 to fileData.Count - 1 do
+        begin
+            split(fileData[index], lineData);
+            pastRolls[index, 1] := strtoint(lineData[1]);
+            pastRolls[index, 2] := strtoint(lineData[2]);
+        end;
+        lineData.Free;
+        fileData.Free;
+    end else
+    begin
+        for index := 0 to 9999 do
+        begin
+            pastRolls[index, 1] := 0;
+            pastRolls[index, 2] := 0;
+        end;
+    end;
 end;
 
 procedure TForm1.writeLog(logString, fileName: String);
