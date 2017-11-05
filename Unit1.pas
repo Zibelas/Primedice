@@ -45,14 +45,6 @@ type
     Button2: TButton;
     Edit10: TEdit;
     Label12: TLabel;
-    Label5: TLabel;
-    Label6: TLabel;
-    Label7: TLabel;
-    Label8: TLabel;
-    Label9: TLabel;
-    Label10: TLabel;
-    Label11: TLabel;
-    Label14: TLabel;
     MainMenu1: TMainMenu;
     New1: TMenuItem;
     User1: TMenuItem;
@@ -69,21 +61,17 @@ type
     Endafterround: TMenuItem;
     Simulation: TMenuItem;
     Resetstatistik1: TMenuItem;
-    Label3: TLabel;
-    Label4: TLabel;
     RESTRequest2: TRESTRequest;
     RESTClient2: TRESTClient;
     RESTResponse2: TRESTResponse;
     BasicRoundCalc1: TMenuItem;
-    Label13: TLabel;
-    Label15: TLabel;
     RESTRequest3: TRESTRequest;
     RESTResponse3: TRESTResponse;
     RESTClient3: TRESTClient;
-    ListBox2: TListBox;
-    Button3: TButton;
-    Label16: TLabel;
-    Label17: TLabel;
+    Statistiks1: TMenuItem;
+    CheckBox1: TCheckBox;
+    ComboBox4: TComboBox;
+    ReTipProfil1: TMenuItem;
     procedure Button1Click(Sender: TObject);
     procedure betBySetProfit(amount: double; target, condition: string);
     procedure reset();
@@ -92,18 +80,16 @@ type
     procedure loadUserProfiles();
     procedure loadTipProfiles();
     procedure loadBetProfiles();
+    procedure loadReTipProfiles();
     procedure tip(amount: integer);
     procedure parseUser(input: TJSONValue);
     function loadBetProfil(betProfil: String): TBetProfil;
     procedure split(input: string; listOfStrings: TStrings);
     procedure writeRollHistory();
     procedure readRollHistory();
-    procedure test();
     procedure addOneToAllAbove(index: Integer);
     procedure addOneToAllBelow(index: Integer);
     function findMaxProfitForBalance(): Integer;
-    procedure displayHistoryBets();
-    procedure doPrint(index: Integer);
     function searchForSelectorProfil(): TBetProfil;
     function parseRequest(input: TJSONValue): boolean;
     function parseForDisplayBet(currentBetIndex: Integer): string;
@@ -123,7 +109,9 @@ type
     procedure Resetstatistik1Click(Sender: TObject);
     procedure BasicRoundCalc1Click(Sender: TObject);
     procedure BasicSurvivalCalc1Click(Sender: TObject);
-    procedure Button3Click(Sender: TObject);
+    procedure Statistiks1Click(Sender: TObject);
+    procedure ReTipProfil1Click(Sender: TObject);
+    procedure ComboBox4Change(Sender: TObject);
   private
 
   public
@@ -142,6 +130,11 @@ type TTipProfil = record
      minAmount: Integer;
 end;
 
+type TReTipProfil = record
+     apiKey: String;
+     amount: Integer;
+end;
+
 var
   Form1: TForm1;
   lastProfit: String;
@@ -152,6 +145,7 @@ var
 
   currentUser: TUser;
   currentTipProfil: TTipProfil;
+  currentReTipProfil: TReTipProfil;
   loadedBetProfil, inUseBetProfil: TBetProfil;
 
   id, roll, nonce: string;
@@ -163,7 +157,7 @@ var
 
 implementation
 
-uses UserForm, TippingForm, BasicRoundCalc, BasicProfitCalc;
+uses UserForm, TippingForm, ReTippingForm, BasicRoundCalc, BasicProfitCalc, StatistikForm;
 
 {$R *.dfm}
 
@@ -256,7 +250,6 @@ begin
     RestClient3.BaseURL := 'https://api.primedice.com/api/users/1?api_key=' + currentUser.apiKey;
     RESTRequest3.Execute;
     parseUser(RestResponse3.JSONValue);
-    label15.Caption := floattostr(currentUser.balance);
     readRollHistory();
 end;
 
@@ -268,6 +261,18 @@ begin
         currentTipProfil.receiver := iniFile.ReadString('Tipprofil', 'Receiver', '');
         currentTipProfil.percent := iniFile.ReadInteger('Tipprofil', 'Percent', 0);
         currentTipProfil.minAmount := iniFile.ReadInteger('Tipprofil', 'MinAmount', 10000);
+    finally
+        iniFile.Free;
+    end;
+end;
+
+procedure TForm1.ComboBox4Change(Sender: TObject);
+var iniFile: TIniFile;
+begin
+    iniFile := TIniFile.Create('./retips/' + combobox4.Items[combobox3.ItemIndex]);
+    try
+        currentReTipProfil.apiKey := iniFile.ReadString('ReTipprofil', 'ApiKey', '');
+        currentReTipProfil.amount := iniFile.ReadInteger('ReTipprofil', 'Amount', 10000);
     finally
         iniFile.Free;
     end;
@@ -298,6 +303,16 @@ begin
         Combobox3.Items.Add(path.Remove(0, 7));
 end;
 
+procedure TForm1.loadReTipProfiles();
+var path: String;
+begin
+    if not DirectoryExists('./retips/') then
+           CreateDir('./retips');
+    Combobox4.Clear;
+    for path in TDirectory.GetFiles('./retips/') do
+        Combobox4.Items.Add(path.Remove(0, 7));
+end;
+
 procedure TForm1.loadBetProfiles();
 var path: String;
 begin
@@ -318,6 +333,7 @@ begin
     loadUserProfiles();
     loadTipProfiles();
     loadBetProfiles();
+    loadReTipProfiles();
 end;
 
 function TForm1.getNextBet(round: Integer): Extended;
@@ -364,12 +380,10 @@ procedure TForm1.Button1Click(Sender: TObject);
 begin
     maxAmountOfRounds := strtoint(edit10.Text);
     longestLoosingStreak := 0;
-    setLength(computedCostList, 0);
-    setLength(computedProfitList, 0);
-    setLength(computedBetList, 0);
     RestClient1.BaseURL := 'https://api.primedice.com/api/bet?api_key=' + currentUser.apiKey;
     reset();
     lastBetSelector := false;
+    readRollHistory();
     if (inUseBetProfil.betType = BySelector) then
     begin
         inUseBetProfil := searchForSelectorProfil();
@@ -391,25 +405,6 @@ begin
     lastBetWon := false;
     button1.Enabled := false;
     combobox1.Enabled := false;
-end;
-
-procedure TForm1.displayHistoryBets();
-begin
-    doPrint(2);
-    doPrint(5);
-    doPrint(10);
-    doPrint(25);
-    doPrint(50);
-    doPrint(75);
-    doPrint(100);
-    doPrint(150);
-    doPrint(200);
-    doPrint(250);
-    doPrint(300);
-    doPrint(500);
-    doPrint(750);
-    doPrint(1000);
-    doPrint(1250);
 end;
 
 function TForm1.findMaxProfitForBalance(): Integer;
@@ -446,6 +441,11 @@ begin
    listOfStrings.DelimitedText   := input;
 end;
 
+procedure TForm1.Statistiks1Click(Sender: TObject);
+begin
+    form7.Show();
+end;
+
 procedure TForm1.Button2Click(Sender: TObject);
 begin
     timer1.Enabled := false;
@@ -471,19 +471,6 @@ begin
         pastRolls[i, 2] := 0;
 end;
 
-procedure TForm1.doPrint(index: Integer);
-var low, high: Integer;
-begin
-    low := trunc(Math.RoundTo(99 / index, -2) * 100);
-    high := trunc(Math.RoundTo(100 - (99 / index), -2) * 100);
-    Listbox2.Items.Add(inttostr(index) + ':High(' + (inttostr(pastRolls[high, 1])) + '):Low(' + (inttostr(pastRolls[low, 2])) + ')');
-end;
-
-procedure TForm1.Button3Click(Sender: TObject);
-begin
-    test();
-end;
-
 procedure TForm1.resetStatistic();
 begin
     currentRound := 0;
@@ -495,6 +482,11 @@ end;
 procedure TForm1.Resetstatistik1Click(Sender: TObject);
 begin
     resetStatistic();
+end;
+
+procedure TForm1.ReTipProfil1Click(Sender: TObject);
+begin
+    Form8.Show();
 end;
 
 procedure TForm1.SimulationClick(Sender: TObject);
@@ -558,7 +550,6 @@ begin
                 lastBetSelector := true;
             end;
         end;
-        test();
         if not (inUseBetProfil.betType = BySelector) then
         begin
             if (lastBetWon) then
@@ -598,9 +589,9 @@ begin
                 currentBet := getNextBet(currentBetIndex);
                 if (checkbox3.Checked) then
                 begin
-                    if (profitAvailableForTip * 100 div currentTipProfil.percent) >= currentTipProfil.minAmount then
+                    if (profitAvailableForTip div 100 * currentTipProfil.percent) >= currentTipProfil.minAmount then
                     begin
-                        tip(profitAvailableForTip * 100 div currentTipProfil.percent);
+                        tip(profitAvailableForTip div 100 * currentTipProfil.percent);
                         tipPerSesson := tipPerSesson + (profitAvailableForTip div currentTipProfil.percent);
                         profitAvailableForTip := 0;
                     end;
@@ -630,13 +621,6 @@ begin
                     end;
                 end;
         end;
-        label15.Caption := floattostr(currentUser.balance);
-        label4.Caption := floattostr(profitAvailableForTip);
-        label6.Caption := inttostr(currentBetIndex);
-        label8.Caption := floattostr(profitPerSesson);
-        label10.Caption := inttostr(currentRound);
-        label14.Caption := inttostr(longestLoosingStreak);
-        label17.Caption := inUseBetProfil.profilName;
     end;
 end;
 
@@ -663,12 +647,6 @@ begin
     while (displayProfit.Length) < 8 do displayProfit := '0' + displayProfit;
     result := display + ':' + amountBets + ':' + displayPayment + ':' + displayProfit;
     writeLog(result + ':' + id + ':' + nonce, 'log.txt');
-end;
-
-procedure TForm1.test();
-begin
-    Listbox2.Clear;
-    displayHistoryBets();
 end;
 
 function TForm1.parseRequest(input: TJSONValue): boolean;

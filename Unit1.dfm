@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'PrimeDice'
-  ClientHeight = 534
-  ClientWidth = 427
+  ClientHeight = 404
+  ClientWidth = 217
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -23,75 +23,11 @@ object Form1: TForm1
     Caption = 'User'
   end
   object Label12: TLabel
-    Left = 4
-    Top = 115
+    Left = 6
+    Top = 139
     Width = 86
     Height = 13
     Caption = 'Amount of rounds'
-  end
-  object Label5: TLabel
-    Left = 10
-    Top = 390
-    Width = 56
-    Height = 13
-    Caption = 'Current Bet'
-  end
-  object Label6: TLabel
-    Left = 205
-    Top = 390
-    Width = 6
-    Height = 13
-    BiDiMode = bdRightToLeft
-    Caption = '0'
-    ParentBiDiMode = False
-  end
-  object Label7: TLabel
-    Left = 10
-    Top = 409
-    Width = 82
-    Height = 13
-    Caption = 'Profit this sesson'
-  end
-  object Label8: TLabel
-    Left = 205
-    Top = 409
-    Width = 6
-    Height = 13
-    BiDiMode = bdRightToLeft
-    Caption = '0'
-    ParentBiDiMode = False
-  end
-  object Label9: TLabel
-    Left = 10
-    Top = 428
-    Width = 71
-    Height = 13
-    Caption = 'Current Round'
-  end
-  object Label10: TLabel
-    Left = 205
-    Top = 428
-    Width = 6
-    Height = 13
-    BiDiMode = bdRightToLeft
-    Caption = '0'
-    ParentBiDiMode = False
-  end
-  object Label11: TLabel
-    Left = 10
-    Top = 447
-    Width = 111
-    Height = 13
-    Caption = 'Longest Loosing Streak'
-  end
-  object Label14: TLabel
-    Left = 205
-    Top = 447
-    Width = 6
-    Height = 13
-    BiDiMode = bdRightToLeft
-    Caption = '0'
-    ParentBiDiMode = False
   end
   object Label2: TLabel
     Left = 8
@@ -100,56 +36,9 @@ object Form1: TForm1
     Height = 13
     Caption = 'Bet Profil'
   end
-  object Label3: TLabel
-    Left = 10
-    Top = 371
-    Width = 77
-    Height = 13
-    Caption = 'Available for Tip'
-  end
-  object Label4: TLabel
-    Left = 205
-    Top = 371
-    Width = 6
-    Height = 13
-    BiDiMode = bdRightToLeft
-    Caption = '0'
-    ParentBiDiMode = False
-  end
-  object Label13: TLabel
-    Left = 8
-    Top = 352
-    Width = 37
-    Height = 13
-    Caption = 'Balance'
-  end
-  object Label15: TLabel
-    Left = 205
-    Top = 352
-    Width = 6
-    Height = 13
-    BiDiMode = bdRightToLeft
-    Caption = '0'
-    ParentBiDiMode = False
-  end
-  object Label16: TLabel
-    Left = 8
-    Top = 466
-    Width = 64
-    Height = 13
-    Caption = 'Current Profil'
-  end
-  object Label17: TLabel
-    Left = 208
-    Top = 466
-    Width = 3
-    Height = 13
-    BiDiMode = bdRightToLeft
-    ParentBiDiMode = False
-  end
   object Button1: TButton
-    Left = 168
-    Top = 498
+    Left = 169
+    Top = 370
     Width = 40
     Height = 25
     Caption = 'Bet'
@@ -158,7 +47,7 @@ object Form1: TForm1
   end
   object ListBox1: TListBox
     Left = 8
-    Top = 142
+    Top = 166
     Width = 201
     Height = 198
     ItemHeight = 13
@@ -166,7 +55,7 @@ object Form1: TForm1
   end
   object Button2: TButton
     Left = 8
-    Top = 498
+    Top = 370
     Width = 38
     Height = 25
     Caption = 'Stop'
@@ -174,8 +63,8 @@ object Form1: TForm1
     OnClick = Button2Click
   end
   object Edit10: TEdit
-    Left = 110
-    Top = 115
+    Left = 112
+    Top = 139
     Width = 97
     Height = 21
     TabOrder = 3
@@ -213,22 +102,21 @@ object Form1: TForm1
     TabOrder = 7
     OnChange = ComboBox3Change
   end
-  object ListBox2: TListBox
-    Left = 224
-    Top = 16
-    Width = 161
-    Height = 324
-    ItemHeight = 13
+  object CheckBox1: TCheckBox
+    Left = 8
+    Top = 116
+    Width = 57
+    Height = 17
+    Caption = 'Retip'
     TabOrder = 8
   end
-  object Button3: TButton
-    Left = 310
-    Top = 346
-    Width = 75
-    Height = 25
-    Caption = 'Button3'
+  object ComboBox4: TComboBox
+    Left = 62
+    Top = 112
+    Width = 145
+    Height = 21
     TabOrder = 9
-    OnClick = Button3Click
+    OnChange = ComboBox4Change
   end
   object RESTRequest1: TRESTRequest
     Client = RESTClient1
@@ -241,7 +129,7 @@ object Form1: TForm1
     Response = RESTResponse1
     SynchronizedEvents = False
     Left = 26
-    Top = 160
+    Top = 184
   end
   object RESTClient1: TRESTClient
     Accept = 'application/json, text/plain; q=0.9, text/html;q=0.8,'
@@ -249,22 +137,22 @@ object Form1: TForm1
     Params = <>
     HandleRedirects = True
     Left = 26
-    Top = 272
+    Top = 296
   end
   object RESTResponse1: TRESTResponse
     Left = 26
-    Top = 216
+    Top = 240
   end
   object Timer1: TTimer
     Enabled = False
     Interval = 700
     OnTimer = Timer1Timer
-    Left = 130
-    Top = 360
+    Left = 154
+    Top = 72
   end
   object MainMenu1: TMainMenu
     Left = 176
-    Top = 120
+    Top = 144
     object New1: TMenuItem
       Caption = 'New'
       object User1: TMenuItem
@@ -279,6 +167,10 @@ object Form1: TForm1
         Caption = 'Tip Profil'
         OnClick = TipProfil1Click
       end
+      object ReTipProfil1: TMenuItem
+        Caption = 'ReTip Profil'
+        OnClick = ReTipProfil1Click
+      end
     end
     object ools1: TMenuItem
       Caption = 'Tools'
@@ -289,6 +181,10 @@ object Form1: TForm1
       object BasicRoundCalc1: TMenuItem
         Caption = 'Basic Round Calc'
         OnClick = BasicRoundCalc1Click
+      end
+      object Statistiks1: TMenuItem
+        Caption = 'Statistiks'
+        OnClick = Statistiks1Click
       end
     end
     object Options1: TMenuItem
@@ -318,7 +214,7 @@ object Form1: TForm1
     Response = RESTResponse2
     SynchronizedEvents = False
     Left = 66
-    Top = 160
+    Top = 184
   end
   object RESTClient2: TRESTClient
     Accept = 'application/json, text/plain; q=0.9, text/html;q=0.8,'
@@ -326,11 +222,11 @@ object Form1: TForm1
     Params = <>
     HandleRedirects = True
     Left = 66
-    Top = 272
+    Top = 296
   end
   object RESTResponse2: TRESTResponse
     Left = 66
-    Top = 216
+    Top = 240
   end
   object RESTRequest3: TRESTRequest
     Client = RESTClient3
@@ -342,11 +238,11 @@ object Form1: TForm1
     Response = RESTResponse3
     SynchronizedEvents = False
     Left = 106
-    Top = 160
+    Top = 184
   end
   object RESTResponse3: TRESTResponse
     Left = 106
-    Top = 216
+    Top = 240
   end
   object RESTClient3: TRESTClient
     Accept = 'application/json, text/plain; q=0.9, text/html;q=0.8,'
@@ -354,6 +250,6 @@ object Form1: TForm1
     Params = <>
     HandleRedirects = True
     Left = 106
-    Top = 272
+    Top = 296
   end
 end

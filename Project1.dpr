@@ -7,7 +7,9 @@ uses
   BetProfilForm in 'BetProfilForm.pas' {Form3},
   TippingForm in 'TippingForm.pas' {Form4},
   BasicProfitCalc in 'BasicProfitCalc.pas' {Form6},
-  BasicRoundCalc in 'BasicRoundCalc.pas' {Form5};
+  BasicRoundCalc in 'BasicRoundCalc.pas' {Form5},
+  StatistikForm in 'StatistikForm.pas' {Form7},
+  ReTippingForm in 'ReTippingForm.pas' {Form8};
 
 {$R *.res}
 
@@ -20,5 +22,7 @@ begin
   Application.CreateForm(TForm4, Form4);
   Application.CreateForm(TForm6, Form6);
   Application.CreateForm(TForm5, Form5);
+  Application.CreateForm(TForm7, Form7);
+  Application.CreateForm(TForm8, Form8);
   Application.Run;
 end.
