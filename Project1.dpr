@@ -9,7 +9,8 @@ uses
   BasicProfitCalc in 'BasicProfitCalc.pas' {Form6},
   BasicRoundCalc in 'BasicRoundCalc.pas' {Form5},
   StatistikForm in 'StatistikForm.pas' {Form7},
-  ReTippingForm in 'ReTippingForm.pas' {Form8};
+  ReTippingForm in 'ReTippingForm.pas' {Form8},
+  SimulationForm in 'SimulationForm.pas' {Form9};
 
 {$R *.res}
 
@@ -24,5 +25,6 @@ begin
   Application.CreateForm(TForm5, Form5);
   Application.CreateForm(TForm7, Form7);
   Application.CreateForm(TForm8, Form8);
+  Application.CreateForm(TForm9, Form9);
   Application.Run;
 end.

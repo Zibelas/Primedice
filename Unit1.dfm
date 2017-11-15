@@ -186,6 +186,10 @@ object Form1: TForm1
         Caption = 'Statistiks'
         OnClick = Statistiks1Click
       end
+      object Simulation1: TMenuItem
+        Caption = 'Simulation'
+        OnClick = Simulation1Click
+      end
     end
     object Options1: TMenuItem
       Caption = 'Options'

@@ -7,7 +7,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, IPPeerClient, REST.Client, System.JSON,
   Data.Bind.Components, Data.Bind.ObjectScope, Vcl.StdCtrls, System.Rtti,
   System.Bindings.Outputs, Vcl.Bind.Editors, Data.Bind.EngExt, Vcl.Bind.DBEngExt,
-  Vcl.ExtCtrls, Math, REST.HttpClient, Inifiles, Vcl.Menus, IOUtils, StrUtils, BetProfilForm;
+  Vcl.ExtCtrls, Math, REST.HttpClient, Inifiles, Vcl.Menus, IOUtils, StrUtils, SimulationForm, BetProfilForm;
 
 type TSwitchCondition = record
      multiply: Integer;
@@ -72,6 +72,7 @@ type
     CheckBox1: TCheckBox;
     ComboBox4: TComboBox;
     ReTipProfil1: TMenuItem;
+    Simulation1: TMenuItem;
     procedure Button1Click(Sender: TObject);
     procedure betBySetProfit(amount: double; target, condition: string);
     procedure reset();
@@ -112,6 +113,7 @@ type
     procedure Statistiks1Click(Sender: TObject);
     procedure ReTipProfil1Click(Sender: TObject);
     procedure ComboBox4Change(Sender: TObject);
+    procedure Simulation1Click(Sender: TObject);
   private
 
   public
@@ -487,6 +489,11 @@ end;
 procedure TForm1.ReTipProfil1Click(Sender: TObject);
 begin
     Form8.Show();
+end;
+
+procedure TForm1.Simulation1Click(Sender: TObject);
+begin
+    Form9.show();
 end;
 
 procedure TForm1.SimulationClick(Sender: TObject);
