@@ -69,7 +69,7 @@ begin
     for I := 1 to strtoint(edit3.Text) do
     begin
         calculateNextBetCost(i-1);
-        listbox1.Items.Add(inttostr(i) + '/' + floattostr(computedCostList[i-1]) + '/' + floattostr(computedProfitList[i-1]));
+        listbox1.Items.Add(inttostr(i) + '/' + floattostr(computedCostList[i-1]) + '/' + floattostr(computedProfitList[i-1]) + '/' + floattostr(computedBetList[i-1]));
     end;
 end;
 

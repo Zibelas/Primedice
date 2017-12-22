@@ -2,7 +2,7 @@ object Form3: TForm3
   Left = 0
   Top = 0
   Caption = 'Bet Profile'
-  ClientHeight = 509
+  ClientHeight = 520
   ClientWidth = 359
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -38,7 +38,7 @@ object Form3: TForm3
   end
   object Button1: TButton
     Left = 276
-    Top = 471
+    Top = 487
     Width = 75
     Height = 25
     Caption = 'Save'
@@ -49,13 +49,14 @@ object Form3: TForm3
     Left = 8
     Top = 67
     Width = 169
-    Height = 96
+    Height = 110
     Caption = 'Bet Type'
     ItemIndex = 0
     Items.Strings = (
       'Fixed Profit'
       'Min Rounds'
-      'Selector')
+      'Selector'
+      'Custom')
     TabOrder = 3
     OnClick = RadioGroup1Click
   end
@@ -77,7 +78,7 @@ object Form3: TForm3
   end
   object GroupBox1: TGroupBox
     Left = 198
-    Top = 220
+    Top = 236
     Width = 153
     Height = 77
     TabOrder = 6
@@ -124,7 +125,7 @@ object Form3: TForm3
   end
   object GroupBox2: TGroupBox
     Left = 198
-    Top = 165
+    Top = 181
     Width = 153
     Height = 58
     TabOrder = 7
@@ -146,7 +147,7 @@ object Form3: TForm3
   end
   object GroupBox3: TGroupBox
     Left = 8
-    Top = 162
+    Top = 178
     Width = 169
     Height = 136
     TabOrder = 8
@@ -227,7 +228,7 @@ object Form3: TForm3
   end
   object GroupBox4: TGroupBox
     Left = 8
-    Top = 304
+    Top = 320
     Width = 343
     Height = 161
     TabOrder = 9
@@ -247,7 +248,7 @@ object Form3: TForm3
     end
     object ListBox1: TListBox
       Left = 14
-      Top = 16
+      Top = 3
       Width = 191
       Height = 137
       ItemHeight = 13
@@ -304,5 +305,37 @@ object Form3: TForm3
       TabOrder = 6
       OnClick = Button4Click
     end
+  end
+  object ListBox2: TListBox
+    Left = 198
+    Top = 80
+    Width = 73
+    Height = 95
+    ItemHeight = 13
+    TabOrder = 10
+  end
+  object Edit10: TEdit
+    Left = 281
+    Top = 80
+    Width = 70
+    Height = 21
+    TabOrder = 11
+  end
+  object Button5: TButton
+    Left = 281
+    Top = 107
+    Width = 71
+    Height = 25
+    Caption = 'Add'
+    TabOrder = 12
+    OnClick = Button5Click
+  end
+  object Button6: TButton
+    Left = 281
+    Top = 153
+    Width = 71
+    Height = 25
+    Caption = 'Delete'
+    TabOrder = 13
   end
 end

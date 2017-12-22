@@ -20,7 +20,7 @@ type TBetProfil = record
      zeroBets: integer;
      inverse: boolean;
      condition: String;
-     target: String;
+     target: Integer;
      minRounds: integer;
      betType: TBetType;
      allowRevenge: boolean;
@@ -43,6 +43,8 @@ type
     Label4: TLabel;
     Button1: TButton;
     ListBox1: TListBox;
+    Memo1: TMemo;
+    ListBox2: TListBox;
     procedure reset();
     procedure ComboBox1Change(Sender: TObject);
     procedure ComboBox2Change(Sender: TObject);
@@ -50,18 +52,22 @@ type
     procedure FormShow(Sender: TObject);
     procedure loadProfiles();
     procedure displayStatistik();
+    procedure calculateCustomCost();
     procedure split(input: string; listOfStrings: TStrings);
     procedure calculateNextBetCost(round: integer);
     procedure addOneToAllAbove(index: Integer);
     procedure addOneToAllBelow(index: Integer);
-    procedure simulateBet();
+    function simulateBet(): boolean;
     function parseRequest(roll: Integer): boolean;
-    function checkForWin(roll: String): boolean;
+    function checkForWin(): boolean;
     function findMaxProfitForBalance(): Integer;
     function searchForSelectorProfil(): TBetProfil;
     function getNextBet(round: Integer): Extended;
     function loadBetProfil(betProfil: String): TBetProfil;
-    function simulateRoll(): String;
+    function simulateRoll(): Integer;
+    procedure resetComputedBets();
+    procedure resetStatistik();
+    procedure resetAfterBroke();
   private
     { Private declarations }
   public
@@ -76,27 +82,27 @@ end;
 
 var
   Form9: TForm9;
-  loadedBetProfil, inUseBetProfil: TBetProfil;
+  originalLoadedBetProfil, loadedBetProfil, inUseBetProfil: TBetProfil;
   currentTipProfil: TTipProfil;
-  totalTip, currentTip, profitAvailableForTip, currentBetIndex, currentRound, totalBrokeRounds, refinanceBalance, balance: Integer;
+  currentTip, profitAvailableForTip, currentBetIndex, currentRound, totalRounds, totalBrokeRounds, refinanceBalance, balance: Integer;
   computedBetList, computedProfitList, computedCostList: Array of Extended;
+  wonOnRound: Array of Integer;
   pastRolls: array[0..9999, 1..2] of Integer;
   lastBetWon, lastBetSelector: Boolean;
-  currentBet: Extended;
-  randomRollNumber: String;
+  currentBet, avarageTipPerRound, totalTip, wastedTips, investedMoney: Extended;
+  randomRollNumber: Integer;
 
 implementation
 
 {$R *.dfm}
 
-function TForm9.simulateRoll(): String;
-var roll: String;
+function TForm9.simulateRoll(): Integer;
+var roll: Integer;
 begin
      balance := balance - trunc(currentBet);
-     roll := inttostr(Math.RandomRange(0, 10000));
-     while roll.Length < 4 do
-           roll := roll + '0';
-     roll := roll.Insert(2, '.');
+     roll := Math.RandomRange(0, 10000);
+     addOneToAllAbove(roll);
+     addOneToAllBelow(roll);
      result := roll;
 end;
 
@@ -130,7 +136,7 @@ begin
         returnBetProfil.profilName := iniFile.ReadString('Betprofil', 'Name', '');
         returnBetProfil.condition := iniFile.ReadString('Betprofil', 'Condition', '>');
         returnBetProfil.zeroBets := iniFile.ReadInteger('Betprofil', 'ZeroBets', 0);
-        returnBetProfil.target := iniFile.ReadString('Betprofil', 'Target', '');
+        returnBetProfil.target := strtoint(iniFile.ReadString('Betprofil', 'Target', '').Replace('.', ''));
         returnBetProfil.multiply := iniFile.ReadInteger('Betprofil', 'Multiply', 0);
         returnBetProfil.inverse := iniFile.ReadBool('Betprofil', 'Inverse', false);
         returnBetProfil.minRounds := iniFile.ReadInteger('Betprofil', 'MinRounds', 0);
@@ -194,7 +200,15 @@ function TForm9.getNextBet(round: Integer): Extended;
 begin
     if (length(computedBetList) <= round) then
     begin
-        calculateNextBetCost(round);
+        if (inUseBetProfil.betType = ByProfit) or (inUseBetProfil.betType = ByMinRounds) then
+        begin
+            calculateNextBetCost(round);
+        end;
+        if (inUseBetProfil.betType = ByCustom) then
+        begin
+            result := 0;
+            exit;
+        end;
     end;
     result := computedBetList[round];
 end;
@@ -222,7 +236,7 @@ begin
             begin
                 returnProfil := loadBetProfil(inUseBetProfil.switchConditions[index].nextBetProfil);
                 returnProfil.condition := ifthen(returnProfil.condition = '>', '<', '>');
-                returnProfil.target := Form3.calculateRollByMultiply(returnProfil.condition, returnProfil.multiply);
+                returnProfil.target := strtoint(Form3.calculateRollByMultiply(returnProfil.condition, returnProfil.multiply).Replace('.', ''));
                 returnProfil.allowSwitchProfilOnWin := true;
                 returnProfil.nextBetProfil := inUseBetProfil.profilName + '.ini';
             end;
@@ -256,14 +270,23 @@ begin
     result := profit;
 end;
 
-function TForm9.checkForWin(roll: String): boolean;
+function TForm9.checkForWin(): boolean;
 begin
     result := false;
     if (inUseBetProfil.condition.Equals('>')) then
-        if (roll > inUseBetProfil.target) then
+    begin
+        if (randomRollNumber > inUseBetProfil.target) then
         begin
-            balance := balance + trunc(currentBet) * inUseBetProfil.multiply;
+            balance := balance + (trunc(currentBet) * inUseBetProfil.multiply);
             result := true;
+        end;
+    end else
+        begin
+            if (randomRollNumber < inUseBetProfil.target) then
+            begin
+                balance := balance + (trunc(currentBet) * inUseBetProfil.multiply);
+                result := true;
+            end;
         end;
 end;
 
@@ -289,22 +312,54 @@ function TForm9.parseRequest(roll: Integer): boolean;
 begin
     addOneToAllAbove(roll);
     addOneToAllBelow(roll);
-    balance := 5;// recalculate CurrentBalance
     result := true;
 end;
 
-procedure TForm9.displayStatistik();
+procedure TForm9.calculateCustomCost();
+var fileData, lineData: TStringList;
+    index: Integer;
+    addedCost, newBet:extended;
 begin
-    ListBox1.Clear;
-    Listbox1.items.add('Balance: ' + inttostr(balance));
-    Listbox1.Items.Add('Wasted Tip: ' + inttostr(profitAvailableForTip));
-    Listbox1.Items.Add('Tipped: ' + inttostr(currentTip));
-    Listbox1.Items.Add('Rounds: ' + inttostr(currentRound));
+    fileData := TStringlist.Create;
+    lineData := TStringlist.Create;
+    addedCost := 0;
+    if (FileExists('./bets/selector/custom_' + inUseBetProfil.profilName + '.ini')) then
+    begin
+        fileData.LoadFromFile('./bets/selector/custom_' + inUseBetProfil.profilName + '.ini');
+        setLength(computedBetList, fileData.Count);
+        setLength(computedCostList, fileData.Count);
+        setLength(computedProfitList, fileData.Count);
+        for index := 0 to fileData.Count - 1 do
+        begin
+            split(fileData[index], lineData);
+            computedBetList[index] := strtofloat(lineData[1]);
+            addedCost := addedCost + computedBetList[index];
+            computedCostList[index] := addedCost;
+            computedProfitList[index] := (computedBetList[index] * inUseBetProfil.multiply) - computedCostList[index];
+        end;
+        fileData.Free;
+        lineData.Free;
+    end;
 end;
 
-procedure TForm9.simulateBet();
+procedure TForm9.displayStatistik();
+var i: integer;
 begin
-    lastBetWon := checkForWin(randomRollNumber);
+    Memo1.Clear;
+    Memo1.lines.add('Balance: ' + inttostr(balance));
+    Memo1.lines.Add('Wasted Tip: ' + floattostr(wastedTips));
+    Memo1.lines.Add('Avg wasted tip per round: ' + floattostr(trunc(wastedTips / totalBrokeRounds)));
+    Memo1.lines.Add('Avg tipped per round: ' + floattostr(trunc(totalTip / totalBrokeRounds)));
+    Memo1.lines.Add('Profit: ' + floattostr(totalTip - investedMoney));
+    Memo1.lines.Add('Total Rounds: ' + inttostr(totalRounds));
+    listbox2.Clear;
+    for i := 1 to 250 do
+        listbox2.items.Add(inttostr(i) + ':' + inttostr(wonOnRound[i-1]));
+end;
+
+function TForm9.simulateBet(): boolean;
+begin
+    lastBetWon := checkForWin();
     if (inUseBetProfil.betType = BySelector) then
     begin
         inUseBetProfil := searchForSelectorProfil();
@@ -318,12 +373,15 @@ begin
     begin
         if (lastBetWon) then
         begin
+            wonOnRound[currentBetIndex] := wonOnRound[currentBetIndex] + 1;
             if (not lastBetSelector) then
             begin
                 inc(currentRound);
-                profitAvailableForTip := profitAvailableForTip + round(computedProfitList[currentBetIndex]);
+                inc(totalRounds);
+                if (round(computedProfitList[currentBetIndex]) > 0) then
+                    profitAvailableForTip := profitAvailableForTip + round(computedProfitList[currentBetIndex]);
             end;
-            Form9.reset();
+            reset();
             if (inUseBetProfil.allowSwitchProfilOnWin and not lastBetSelector) then
             begin
                 inUseBetProfil := loadBetProfil(inUseBetProfil.nextBetProfil);
@@ -332,82 +390,145 @@ begin
             begin
                 inUseBetProfil.profit := loadedBetProfil.profit;
             end;
+            if (inUseBetProfil.betType = ByCustom) then
+            begin
+                calculateCustomCost();
+            end;
             if (inUseBetProfil.betType = ByMinRounds) then
             begin
                 if (findMaxProfitForBalance() <> inUseBetProfil.profit) then
                 begin
                     inUseBetProfil.profit := findMaxProfitForBalance();
+                    resetComputedBets();
                 end;
             end;
             if (inUseBetProfil.inverse and not lastBetSelector) then
             begin
                 inUseBetProfil.condition := ifthen(inUseBetProfil.condition = '>', '<', '>');
-                inUseBetProfil.target := Form3.calculateRollByMultiply(inUseBetProfil.condition, inUseBetProfil.multiply);
+                inUseBetProfil.target := strtoint(Form3.calculateRollByMultiply(inUseBetProfil.condition, inUseBetProfil.multiply).Replace('.',''));
             end;
             currentBet := getNextBet(currentBetIndex);
             if (profitAvailableForTip div 100 * currentTipProfil.percent) >= currentTipProfil.minAmount then
             begin
                 currentTip := currentTip + (profitAvailableForTip div 100 * currentTipProfil.percent);
                 totalTip := totalTip + (profitAvailableForTip div 100 * currentTipProfil.percent);
+                balance := balance - (profitAvailableForTip div 100 * currentTipProfil.percent);
                 profitAvailableForTip := 0;
             end;
             lastBetSelector := false;
             randomRollNumber := simulateRoll();
-            simulateBet();
+            result := false;
         end else
             begin
                 inc(currentBetIndex);
                 currentBet := getNextBet(currentBetIndex);
-                if (balance >= currentBet) then
+                if (balance > currentBet) then
                 begin
                     randomRollNumber := simulateRoll();
-                    simulateBet();
+                    result := false;
                 end else
                     begin
-                        Form9.Button1.Caption := 'End';
-                        Form9.displayStatistik();
+                        wastedTips := wastedTips + profitAvailableForTip;
+                        result := true;
                     end;
             end;
-    end;
+    end else
+        begin
+            randomRollNumber := simulateRoll();
+            result := false;
+        end;
 end;
 
 procedure TForm9.reset();
 begin
     currentBetIndex := 0;
     lastBetWon := false;
-    //setLength(computedCostList, 0);
-    //setLength(computedProfitList, 0);
-    //setLength(computedBetList, 0);
 end;
 
 
 procedure TForm9.Button1Click(Sender: TObject);
+var betlost: boolean;
+    i: Integer;
 begin
+    originalLoadedBetProfil := loadedBetProfil;
     randomize();
     refinanceBalance := strtoint(edit1.text);
     totalBrokeRounds := strtoint(edit2.Text);
-    balance := refinanceBalance;
     button1.Caption := 'Start';
-    randomRollNumber := simulateRoll();
-    lastBetSelector := false;
-    reset();
+    button1.enabled := false;
+    resetStatistik();
+    setLength(wonOnRound, 250);
+    for I := 1 to totalBrokeRounds do
+    begin
+        reset();
+        resetAfterBroke();
+        resetComputedBets();
+        if (inUseBetProfil.betType = BySelector) then
+        begin
+            inUseBetProfil := searchForSelectorProfil();
+        end;
+        if (inUseBetProfil.betType = ByMinRounds) then
+        begin
+            inUseBetProfil.profit := findMaxProfitForBalance();
+        end;
+        if (inUseBetProfil.betType = BySelector) then
+        begin
+            lastBetSelector := true;
+        end;
+        if (inUseBetProfil.betType = ByCustom) then
+        begin
+            calculateCustomCost();
+        end;
+        currentBet := getNextBet(currentBetIndex);
+        randomRollNumber := simulateRoll();
+        repeat
+            betLost := simulateBet();
+        until betLost;
+        button1.Caption := inttostr(i);
+    end;
+    Form9.displayStatistik();
+    button1.enabled := true;
+    Form9.Button1.Caption := 'End';
+end;
+
+procedure TForm9.resetStatistik();
+var i: Integer;
+begin
+    currentRound := 0;
+    totalRounds := 0;
+    profitAvailableForTip := 0;
+    totalTip := 0;
+    currentTip := 0;
+    currentBet := 0;
+    wastedTips := 0;
+    balance := 0;
+    investedMoney := 0;
+    inUseBetProfil := originalLoadedBetProfil;
+    loadedBetProfil := originalLoadedBetProfil;
+    for I := 0 to 9999 do
+    begin
+        pastRolls[i, 1] := 0;
+        pastRolls[i, 2] := 0;
+    end;
+end;
+
+procedure TForm9.resetComputedBets();
+begin
     setLength(computedCostList, 0);
     setLength(computedProfitList, 0);
     setLength(computedBetList, 0);
-    if (inUseBetProfil.betType = BySelector) then
-    begin
-        inUseBetProfil := searchForSelectorProfil();
-    end;
-    if (inUseBetProfil.betType = ByMinRounds) then
-    begin
-        inUseBetProfil.profit := findMaxProfitForBalance();
-    end;
-    currentBet := getNextBet(currentBetIndex);
-    if (inUseBetProfil.betType = BySelector) then
-    begin
-        lastBetSelector := true;
-    end;
-    simulateBet();
+end;
+
+procedure TForm9.resetAfterBroke();
+begin
+    investedMoney := investedMoney + refinanceBalance;
+    profitAvailableForTip := 0;
+    currentRound := 0;
+    currentBet := 0;
+    lastBetSelector := false;
+    balance := balance + refinanceBalance;
+    inUseBetProfil := originalLoadedBetProfil;
+    loadedBetProfil := originalLoadedBetProfil;
 end;
 
 procedure TForm9.ComboBox1Change(Sender: TObject);

@@ -45,6 +45,10 @@ type
     Button2: TButton;
     Button3: TButton;
     Button4: TButton;
+    ListBox2: TListBox;
+    Edit10: TEdit;
+    Button5: TButton;
+    Button6: TButton;
     procedure loadProfiles;
     procedure clearData();
     procedure split(input: string; listOfStrings: TStrings);
@@ -58,13 +62,14 @@ type
     procedure RadioGroup1Click(Sender: TObject);
     procedure ListBox1Click(Sender: TObject);
     procedure Button4Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
   private
     { Private declarations }
   public
     { Public declarations }
   end;
 
-type TBetType = (ByProfit = 0, ByMinRounds = 1, BySelector = 2);
+type TBetType = (ByProfit = 0, ByMinRounds = 1, BySelector = 2, ByCustom = 3);
 
 var
   Form3: TForm3;
@@ -98,6 +103,10 @@ begin
     if (RadioGroup1.ItemIndex = 2) then
     begin
         listbox1.Items.SaveToFile('./bets/selector/selector_'+ ChangeFileExt(edit1.Text, '.ini'));
+    end;
+    if (RadioGroup1.ItemIndex = 3) then
+    begin
+        listbox2.Items.SaveToFile('./bets/selector/custom_' + ChangeFileExt(edit1.Text, '.ini'));
     end;
     loadProfiles();
 end;
@@ -153,15 +162,34 @@ begin
     listbox1.items[listbox1.ItemIndex] := Edit8.Text + ':' + edit9.Text + ':' + combobox4.items[combobox4.ItemIndex];
 end;
 
+procedure TForm3.Button5Click(Sender: TObject);
+begin
+    listbox2.Items.Add(inttostr(listbox2.Items.Count + 1) + ':' + edit10.Text);
+end;
+
 function TForm3.calculateRollByMultiply(condition: String; multiply: Integer): String;
+var target: String;
 begin
     if (condition = '>') then
     begin
-         result := floatToStr(Math.RoundTo((100 - (99 / multiply) - 0.01), -2)).replace(',', '.');
+         target := floatToStr(Math.RoundTo((100 - (99 / multiply) - 0.01), -2)).replace(',', '.');
     end else
         begin
-             result := floatToStr(Math.RoundTo(99 / multiply, -2)).replace(',', '.');
+             target := floatToStr(Math.RoundTo(99 / multiply, -2)).replace(',', '.');
         end;
+    if not target.Contains('.') then
+           begin
+               target := target + '.00';
+           end;
+    if (target.Length < 5) and (target.Length - target.IndexOf('.') = 2) then
+    begin
+        target := target + '0';
+    end;
+    while target.Length < 5 do
+    begin
+        target := '0' + target;
+    end;
+    result := target;
 end;
 
 procedure TForm3.FormShow(Sender: TObject);

@@ -83,6 +83,7 @@ type
     procedure loadBetProfiles();
     procedure loadReTipProfiles();
     procedure tip(amount: integer);
+    procedure calculateCustomCost();
     procedure parseUser(input: TJSONValue);
     function loadBetProfil(betProfil: String): TBetProfil;
     procedure split(input: string; listOfStrings: TStrings);
@@ -162,6 +163,32 @@ implementation
 uses UserForm, TippingForm, ReTippingForm, BasicRoundCalc, BasicProfitCalc, StatistikForm;
 
 {$R *.dfm}
+
+procedure TForm1.calculateCustomCost();
+var fileData, lineData: TStringList;
+    index: Integer;
+    addedCost, newBet:extended;
+begin
+    fileData := TStringlist.Create;
+    lineData := TStringlist.Create;
+    if (FileExists('./bets/selector/custom_' + inUseBetProfil.profilName + '.ini')) then
+    begin
+        fileData.LoadFromFile('./bets/selector/custom_' + inUseBetProfil.profilName + '.ini');
+        setLength(computedBetList, fileData.Count);
+        setLength(computedCostList, fileData.Count);
+        setLength(computedProfitList, fileData.Count);
+        for index := 0 to fileData.Count - 1 do
+        begin
+            split(fileData[index], lineData);
+            computedBetList[index] := strtofloat(lineData[1]);
+            addedCost := addedCost + computedBetList[index];
+            computedCostList[index] := addedCost;
+            computedProfitList[index] := (computedBetList[index] * inUseBetProfil.multiply) - computedCostList[index];
+        end;
+        fileData.Free;
+        lineData.Free;
+    end;
+end;                                                           //73:106
 
 procedure TForm1.calculateNextBetCost(round: integer);
 var index: Integer;
@@ -342,7 +369,14 @@ function TForm1.getNextBet(round: Integer): Extended;
 begin
     if (length(computedBetList) <= round) then
     begin
-        calculateNextBetCost(round);
+        if (inUseBetProfil.betType = ByProfit) or (inUseBetProfil.betType = ByMinRounds) then
+        begin
+            calculateNextBetCost(round);
+        end;
+        if (inUseBetProfil.betType = ByCustom) then
+        begin
+            result := 0;
+        end;
     end;
     result := computedBetList[round];
 end;
@@ -393,6 +427,10 @@ begin
     if (inUseBetProfil.betType = ByMinRounds) then
     begin
         inUseBetProfil.profit := findMaxProfitForBalance();
+    end;
+    if (inUseBetProfil.betType = ByCustom) then
+    begin
+        calculateCustomCost();
     end;
     currentBet := getNextBet(currentBetIndex);
     if (simulation.Checked) then
@@ -576,6 +614,10 @@ begin
                 if (inUseBetProfil.betType = ByProfit) then
                 begin
                     inUseBetProfil.profit := loadedBetProfil.profit;
+                end;
+                if (inUseBetProfil.betType = ByCustom) then
+                begin
+                    calculateCustomCost();
                 end;
                 if (inUseBetProfil.betType = ByMinRounds) then
                 begin

@@ -2,8 +2,8 @@ object Form9: TForm9
   Left = 0
   Top = 0
   Caption = 'Form9'
-  ClientHeight = 273
-  ClientWidth = 205
+  ClientHeight = 356
+  ClientWidth = 335
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -64,6 +64,7 @@ object Form9: TForm9
     Width = 145
     Height = 21
     TabOrder = 2
+    Text = '1000'
   end
   object Edit2: TEdit
     Left = 54
@@ -71,6 +72,7 @@ object Form9: TForm9
     Width = 145
     Height = 21
     TabOrder = 3
+    Text = '1'
   end
   object Button1: TButton
     Left = 122
@@ -88,5 +90,22 @@ object Form9: TForm9
     Height = 97
     ItemHeight = 13
     TabOrder = 5
+  end
+  object Memo1: TMemo
+    Left = 8
+    Top = 256
+    Width = 189
+    Height = 89
+    Lines.Strings = (
+      'Memo1')
+    TabOrder = 6
+  end
+  object ListBox2: TListBox
+    Left = 205
+    Top = 8
+    Width = 121
+    Height = 337
+    ItemHeight = 13
+    TabOrder = 7
   end
 end
