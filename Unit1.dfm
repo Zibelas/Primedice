@@ -79,8 +79,8 @@ object Form1: TForm1
     OnChange = ComboBox2Change
   end
   object ComboBox1: TComboBox
-    Left = 62
-    Top = 45
+    Left = 64
+    Top = 51
     Width = 145
     Height = 21
     TabOrder = 5

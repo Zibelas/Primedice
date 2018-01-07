@@ -231,6 +231,7 @@ begin
                 returnProfil := loadBetProfil(inUseBetProfil.switchConditions[index].nextBetProfil);
                 returnProfil.allowSwitchProfilOnWin := true;
                 returnProfil.nextBetProfil := inUseBetProfil.profilName + '.ini';
+                break;
             end;
         end else if (inUseBetProfil.switchConditions[index].switchCondition <= pastRolls[low, 2]) then
             begin
@@ -239,6 +240,7 @@ begin
                 returnProfil.target := strtoint(Form3.calculateRollByMultiply(returnProfil.condition, returnProfil.multiply).Replace('.', ''));
                 returnProfil.allowSwitchProfilOnWin := true;
                 returnProfil.nextBetProfil := inUseBetProfil.profilName + '.ini';
+                break;
             end;
     end;
     result := returnProfil;
@@ -373,9 +375,9 @@ begin
     begin
         if (lastBetWon) then
         begin
-            wonOnRound[currentBetIndex] := wonOnRound[currentBetIndex] + 1;
             if (not lastBetSelector) then
             begin
+                wonOnRound[currentBetIndex] := wonOnRound[currentBetIndex] + 1;
                 inc(currentRound);
                 inc(totalRounds);
                 if (round(computedProfitList[currentBetIndex]) > 0) then
@@ -457,7 +459,6 @@ begin
     button1.Caption := 'Start';
     button1.enabled := false;
     resetStatistik();
-    setLength(wonOnRound, 250);
     for I := 1 to totalBrokeRounds do
     begin
         reset();
@@ -505,6 +506,7 @@ begin
     investedMoney := 0;
     inUseBetProfil := originalLoadedBetProfil;
     loadedBetProfil := originalLoadedBetProfil;
+    setLength(wonOnRound, 250);
     for I := 0 to 9999 do
     begin
         pastRolls[i, 1] := 0;

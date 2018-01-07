@@ -399,6 +399,7 @@ begin
                 returnProfil := loadBetProfil(inUseBetProfil.switchConditions[index].nextBetProfil);
                 returnProfil.allowSwitchProfilOnWin := true;
                 returnProfil.nextBetProfil := inUseBetProfil.profilName + '.ini';
+                break;
             end;
         end else if (inUseBetProfil.switchConditions[index].switchCondition <= pastRolls[low, 2]) then
             begin
@@ -407,6 +408,7 @@ begin
                 returnProfil.target := Form3.calculateRollByMultiply(returnProfil.condition, returnProfil.multiply);
                 returnProfil.allowSwitchProfilOnWin := true;
                 returnProfil.nextBetProfil := inUseBetProfil.profilName + '.ini';
+                break;
             end;
     end;
     result := returnProfil;
